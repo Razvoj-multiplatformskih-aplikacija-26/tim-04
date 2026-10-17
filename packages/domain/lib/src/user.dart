@@ -7,8 +7,7 @@ enum Role {
   volunteer,
   seniorVolunteer,
   veterinarian,
-  coordinator
-  ;
+  coordinator;
 
   bool get isStaff => this != Role.adopter;
 }
