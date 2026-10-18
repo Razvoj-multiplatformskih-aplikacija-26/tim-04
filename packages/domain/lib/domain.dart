@@ -1,3 +1,5 @@
+export 'src/animal/animal.dart';
+export 'src/animal/animal_name.dart';
 export 'src/animal/animal_status.dart';
 export 'src/errors.dart';
 export 'src/identifiers.dart';

@@ -1,10 +1,11 @@
 import 'package:meta/meta.dart';
 
+import 'animal/animal_status.dart';
+
 sealed class DomainError {
   const DomainError();
 }
 
-// P1 – ime životinje
 final class NameTooShort extends DomainError {
   const NameTooShort();
 }
@@ -13,7 +14,6 @@ final class NameTooLong extends DomainError {
   const NameTooLong();
 }
 
-// P2 – motivacija
 @immutable
 final class MotivationTooShort extends DomainError {
   const MotivationTooShort(this.length);
@@ -40,4 +40,24 @@ final class NotAllowed extends DomainError {
 
 final class NotFound extends DomainError {
   const NotFound();
+}
+
+@immutable
+final class InvalidTransition extends DomainError {
+  const InvalidTransition({required this.from, required this.to});
+
+  final AnimalStatus from;
+  final AnimalStatus to;
+
+  @override
+  bool operator ==(Object other) =>
+      other is InvalidTransition &&
+      other.from.runtimeType == from.runtimeType &&
+      other.to.runtimeType == to.runtimeType;
+
+  @override
+  int get hashCode => Object.hash(InvalidTransition, from.runtimeType, to.runtimeType);
+
+  @override
+  String toString() => 'InvalidTransition(${from.runtimeType} -> ${to.runtimeType})';
 }
