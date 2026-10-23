@@ -85,4 +85,50 @@ void main() {
       expect(submit(myRequests: [duplicate, ...others]), const Failure<AdoptionRequest>(DuplicateRequest()));
     });
   });
+
+  group('P4 · withdrawRequest', () {
+    final pending = requestBy(ana, animalId: rex.id);
+
+    test('withdraws a pending request of the applicant', () {
+      final result = withdrawRequest(request: pending, by: ana, now: now);
+
+      expect(result, Success(pending.copyWith(status: AdoptionRequestStatus.withdrawn)));
+    });
+
+    test('rejects another adopter', () {
+      expect(withdrawRequest(request: pending, by: marko, now: now), const Failure<AdoptionRequest>(NotAllowed()));
+    });
+
+    test('rejects staff members, because only the applicant may withdraw', () {
+      expect(
+        withdrawRequest(request: pending, by: coordinator, now: now),
+        const Failure<AdoptionRequest>(NotAllowed()),
+      );
+    });
+
+    test('rejects a request that is no longer pending', () {
+      final approved = pending.copyWith(status: AdoptionRequestStatus.approved);
+      final rejected = pending.copyWith(status: AdoptionRequestStatus.rejected);
+      final withdrawn = pending.copyWith(status: AdoptionRequestStatus.withdrawn);
+
+      expect(
+        withdrawRequest(request: approved, by: ana, now: now),
+        const Failure<AdoptionRequest>(WithdrawNotAllowed()),
+      );
+      expect(
+        withdrawRequest(request: rejected, by: ana, now: now),
+        const Failure<AdoptionRequest>(WithdrawNotAllowed()),
+      );
+      expect(
+        withdrawRequest(request: withdrawn, by: ana, now: now),
+        const Failure<AdoptionRequest>(WithdrawNotAllowed()),
+      );
+    });
+
+    test('checks the applicant before the status', () {
+      final approved = pending.copyWith(status: AdoptionRequestStatus.approved);
+
+      expect(withdrawRequest(request: approved, by: marko, now: now), const Failure<AdoptionRequest>(NotAllowed()));
+    });
+  });
 }
