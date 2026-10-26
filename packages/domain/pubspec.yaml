@@ -9,6 +9,7 @@ resolution: workspace
 
 dependencies:
   characters: 1.4.1
+  collection: 1.19.1
   meta: 1.19.0
 
 dev_dependencies:

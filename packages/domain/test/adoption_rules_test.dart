@@ -131,4 +131,148 @@ void main() {
       expect(withdrawRequest(request: approved, by: marko, now: now), const Failure<AdoptionRequest>(NotAllowed()));
     });
   });
+
+  group('P5 · approveRequest', () {
+    final byAna = requestBy(ana, animalId: rex.id, id: 'r-1');
+    final byMarko = requestBy(marko, animalId: rex.id, id: 'r-2');
+    final byJelena = requestBy(jelena, animalId: rex.id, id: 'r-3');
+    final all = [byAna, byMarko, byJelena];
+
+    Result<ApprovalOutcome> approve({Animal? animal, AdoptionRequest? request, User by = coordinator}) =>
+        approveRequest(animal: animal ?? rex, request: request ?? byMarko, allRequestsForAnimal: all, by: by, now: now);
+
+    test('reserves the animal and rejects the other two competing requests', () {
+      final outcome = approve().valueOrNull!;
+
+      expect(outcome.animal.status, Reserved(requestId: byMarko.id, approvedBy: coordinator.id, at: now));
+      expect(outcome.approved, byMarko.copyWith(status: AdoptionRequestStatus.approved));
+      expect(outcome.rejected, [
+        byAna.copyWith(status: AdoptionRequestStatus.rejected),
+        byJelena.copyWith(status: AdoptionRequestStatus.rejected),
+      ]);
+    });
+
+    test('leaves requests that are no longer pending out of the rejected list', () {
+      final withdrawn = requestBy(jelena, animalId: rex.id, id: 'r-4', status: AdoptionRequestStatus.withdrawn);
+      final outcome = approveRequest(
+        animal: rex,
+        request: byMarko,
+        allRequestsForAnimal: [byAna, byMarko, withdrawn],
+        by: coordinator,
+        now: now,
+      ).valueOrNull!;
+
+      expect(outcome.rejected.map((r) => r.id), [byAna.id]);
+    });
+
+    test('a senior volunteer can approve as well', () {
+      expect(approve(by: senior).isSuccess, isTrue);
+    });
+
+    test('rejects adopters, volunteers and vets', () {
+      for (final user in [ana, volunteer, vet]) {
+        expect(approve(by: user), const Failure<ApprovalOutcome>(NotAllowed()));
+      }
+    });
+
+    test('rejects a request that is no longer pending', () {
+      final withdrawn = byMarko.copyWith(status: AdoptionRequestStatus.withdrawn);
+
+      expect(approve(request: withdrawn), const Failure<ApprovalOutcome>(InvalidRequestTransition()));
+    });
+
+    test('rejects an animal that is not ready for adoption', () {
+      expect(approve(animal: rexInQuarantine), const Failure<ApprovalOutcome>(AnimalNotAdoptable()));
+    });
+
+    test('locks the animal: a second approval for the same animal fails', () {
+      final reservedRex = approve().valueOrNull!.animal;
+
+      expect(approve(animal: reservedRex, request: byAna), const Failure<ApprovalOutcome>(AnimalNotAdoptable()));
+    });
+
+    test('checks permission, then the request, then the animal', () {
+      final withdrawn = byMarko.copyWith(status: AdoptionRequestStatus.withdrawn);
+
+      expect(
+        approve(animal: rexInQuarantine, request: withdrawn, by: ana),
+        const Failure<ApprovalOutcome>(NotAllowed()),
+      );
+      expect(
+        approve(animal: rexInQuarantine, request: withdrawn),
+        const Failure<ApprovalOutcome>(InvalidRequestTransition()),
+      );
+    });
+  });
+
+  group('P6 · rejectRequest', () {
+    final pending = requestBy(ana, animalId: rex.id);
+
+    test('a coordinator and a senior volunteer can reject a pending request', () {
+      final rejected = Success(pending.copyWith(status: AdoptionRequestStatus.rejected));
+
+      expect(rejectRequest(request: pending, by: coordinator), rejected);
+      expect(rejectRequest(request: pending, by: senior), rejected);
+    });
+
+    test('rejects adopters, volunteers and vets', () {
+      for (final user in [ana, marko, volunteer, vet]) {
+        expect(rejectRequest(request: pending, by: user), const Failure<AdoptionRequest>(NotAllowed()));
+      }
+    });
+
+    test('rejects a request that is no longer pending', () {
+      for (final status in [
+        AdoptionRequestStatus.approved,
+        AdoptionRequestStatus.rejected,
+        AdoptionRequestStatus.withdrawn,
+      ]) {
+        expect(
+          rejectRequest(
+            request: pending.copyWith(status: status),
+            by: coordinator,
+          ),
+          const Failure<AdoptionRequest>(InvalidRequestTransition()),
+        );
+      }
+    });
+
+    test('checks permission before the status', () {
+      final withdrawn = pending.copyWith(status: AdoptionRequestStatus.withdrawn);
+
+      expect(rejectRequest(request: withdrawn, by: ana), const Failure<AdoptionRequest>(NotAllowed()));
+    });
+  });
+
+  group('competingRequests', () {
+    const other = AnimalId('a-other');
+    final byJelena = requestBy(jelena, animalId: rex.id, id: 'r-3', createdAt: DateTime(2026, 10, 12));
+    final byAna = requestBy(ana, animalId: rex.id, id: 'r-1', createdAt: DateTime(2026, 10, 10));
+    final byMarko = requestBy(
+      marko,
+      animalId: rex.id,
+      id: 'r-2',
+      createdAt: DateTime(2026, 10, 11),
+      status: AdoptionRequestStatus.approved,
+    );
+    final withdrawn = requestBy(
+      marko,
+      animalId: rex.id,
+      id: 'r-4',
+      createdAt: DateTime(2026, 10, 9),
+      status: AdoptionRequestStatus.withdrawn,
+    );
+    final forOtherAnimal = requestBy(ana, animalId: other, id: 'r-5');
+
+    test('returns active requests for the animal, oldest first', () {
+      final all = [byJelena, forOtherAnimal, byAna, withdrawn, byMarko];
+
+      expect(competingRequests(rex.id, all), [byAna, byMarko, byJelena]);
+    });
+
+    test('returns an empty list when nobody competes for the animal', () {
+      expect(competingRequests(other, [byAna, byMarko]), isEmpty);
+      expect(competingRequests(rex.id, []), isEmpty);
+    });
+  });
 }
