@@ -61,3 +61,23 @@ final class InvalidTransition extends DomainError {
   @override
   String toString() => 'InvalidTransition(${from.runtimeType} -> ${to.runtimeType})';
 }
+
+final class TooManyActiveRequests extends DomainError {
+  const TooManyActiveRequests();
+}
+
+final class AnimalNotAdoptable extends DomainError {
+  const AnimalNotAdoptable();
+}
+
+final class DuplicateRequest extends DomainError {
+  const DuplicateRequest();
+}
+
+final class WithdrawNotAllowed extends DomainError {
+  const WithdrawNotAllowed();
+}
+
+final class InvalidRequestTransition extends DomainError {
+  const InvalidRequestTransition();
+}
