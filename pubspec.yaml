@@ -6,6 +6,7 @@ environment:
   sdk: ^3.13.0
 
 workspace:
+  - apps/backoffice
   - apps/mobile
   - packages/blocs
   - packages/domain
