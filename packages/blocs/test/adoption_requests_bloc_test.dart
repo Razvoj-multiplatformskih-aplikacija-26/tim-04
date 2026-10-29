@@ -98,6 +98,14 @@ void main() {
   });
 
   group('submit (P3)', () {
+    final anasForLunaNew = AdoptionRequest(
+      id: const AdoptionRequestId('r-new'),
+      animalId: luna.id,
+      applicantId: ana.id,
+      motivation: motivation,
+      createdAt: now,
+    );
+
     blocTest<AdoptionRequestBloc, AdoptionRequestState>(
       'adds a new pending request',
       build: () => blocWith(ana, [anasForRex]),
@@ -108,18 +116,8 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        RequestsLoaded(
-          requests: [
-            anasForRex,
-            AdoptionRequest(
-              id: const AdoptionRequestId('r-new'),
-              animalId: luna.id,
-              applicantId: ana.id,
-              motivation: motivation,
-              createdAt: now,
-            ),
-          ],
-        ),
+        RequestsLoaded(requests: [anasForRex], busy: true),
+        RequestsLoaded(requests: [anasForRex, anasForLunaNew], notice: RequestSaved(anasForLunaNew)),
       ],
     );
 
@@ -133,9 +131,50 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        RequestsLoaded(requests: [anasForRex, anasForLuna], error: const TooManyActiveRequests()),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
       ],
       verify: (_) async => expect(await repo.requests(), hasLength(2)),
+    );
+
+    blocTest<AdoptionRequestBloc, AdoptionRequestState>(
+      'reports the same refusal again after the notice is acknowledged',
+      build: () => blocWith(ana, [anasForRex, anasForLuna]),
+      act: (bloc) async {
+        bloc.add(const MyRequestsRequested());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(RequestSubmitted(bobi.id, motivation));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const RequestsNoticeAcknowledged());
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(RequestSubmitted(bobi.id, motivation));
+      },
+      skip: 2,
+      expect: () => [
+        RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
+        RequestsLoaded(requests: [anasForRex, anasForLuna]),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
+      ],
+    );
+
+    blocTest<AdoptionRequestBloc, AdoptionRequestState>(
+      'keeps the list and reports a failed submission',
+      build: () => blocWith(ana, [anasForRex]),
+      act: (bloc) async {
+        bloc.add(const MyRequestsRequested());
+        await Future<void>.delayed(Duration.zero);
+        repo.failNextRequest();
+        bloc.add(RequestSubmitted(luna.id, motivation));
+      },
+      skip: 2,
+      expect: () => [
+        RequestsLoaded(requests: [anasForRex], busy: true),
+        isA<RequestsLoaded>()
+            .having((state) => state.requests, 'requests', [anasForRex])
+            .having((state) => state.notice, 'notice', isA<RequestFailed>()),
+      ],
     );
   });
 
@@ -149,9 +188,13 @@ void main() {
         bloc.add(RequestWithdrawn(anasForRex.id));
       },
       skip: 2,
-      expect: () => [
-        RequestsLoaded(requests: [anasForRex.copyWith(status: AdoptionRequestStatus.withdrawn)]),
-      ],
+      expect: () {
+        final withdrawn = anasForRex.copyWith(status: AdoptionRequestStatus.withdrawn);
+        return [
+          RequestsLoaded(requests: [anasForRex], busy: true),
+          RequestsLoaded(requests: [withdrawn], notice: RequestSaved(withdrawn)),
+        ];
+      },
     );
 
     final approved = request('r-1', ana, rex, status: AdoptionRequestStatus.approved);
@@ -166,7 +209,8 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        RequestsLoaded(requests: [approved], error: const WithdrawNotAllowed()),
+        RequestsLoaded(requests: [approved], busy: true),
+        RequestsLoaded(requests: [approved], notice: const RequestRefused(WithdrawNotAllowed())),
       ],
     );
   });
@@ -181,15 +225,20 @@ void main() {
         bloc.add(RequestApproved(anasForRex.id));
       },
       skip: 2,
-      expect: () => [
-        RequestsLoaded(
-          requests: [
-            anasForRex.copyWith(status: AdoptionRequestStatus.approved),
-            markosForRex.copyWith(status: AdoptionRequestStatus.rejected),
-            jelenasForRex.copyWith(status: AdoptionRequestStatus.rejected),
-          ],
-        ),
-      ],
+      expect: () {
+        final approved = anasForRex.copyWith(status: AdoptionRequestStatus.approved);
+        return [
+          RequestsLoaded(requests: [anasForRex, markosForRex, jelenasForRex], busy: true),
+          RequestsLoaded(
+            requests: [
+              approved,
+              markosForRex.copyWith(status: AdoptionRequestStatus.rejected),
+              jelenasForRex.copyWith(status: AdoptionRequestStatus.rejected),
+            ],
+            notice: RequestSaved(approved),
+          ),
+        ];
+      },
       verify: (_) async {
         final saved = await repo.animal(rex.id);
         expect(saved.status, Reserved(requestId: anasForRex.id, approvedBy: coordinator.id, at: now));
@@ -206,7 +255,8 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        RequestsLoaded(requests: [anasForRex], error: const NotAllowed()),
+        RequestsLoaded(requests: [anasForRex], busy: true),
+        RequestsLoaded(requests: [anasForRex], notice: const RequestRefused(NotAllowed())),
       ],
     );
   });
@@ -221,9 +271,13 @@ void main() {
         bloc.add(RequestRejected(anasForRex.id));
       },
       skip: 2,
-      expect: () => [
-        RequestsLoaded(requests: [anasForRex.copyWith(status: AdoptionRequestStatus.rejected)]),
-      ],
+      expect: () {
+        final rejected = anasForRex.copyWith(status: AdoptionRequestStatus.rejected);
+        return [
+          RequestsLoaded(requests: [anasForRex], busy: true),
+          RequestsLoaded(requests: [rejected], notice: RequestSaved(rejected)),
+        ];
+      },
     );
   });
 }

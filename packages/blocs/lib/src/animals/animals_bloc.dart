@@ -30,6 +30,13 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
   AnimalsFilter _filter;
   AnimalId? _selectedId;
 
+  Animal? animalById(AnimalId id) {
+    for (final animal in _all) {
+      if (animal.id == id) return animal;
+    }
+    return null;
+  }
+
   Future<void> _load(Emitter<AnimalsState> emit) async {
     emit(const AnimalsLoading());
     try {
