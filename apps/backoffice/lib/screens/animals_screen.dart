@@ -2,16 +2,46 @@ import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 
 import '../dependencies.dart';
 
-class AnimalsScreen extends StatelessWidget {
-  const AnimalsScreen({super.key});
+/// The URL owns the selection: a tap changes the address, and the screen passes the address on to the bloc.
+class AnimalsScreen extends StatefulWidget {
+  const AnimalsScreen({super.key, this.selectedId});
+
+  static const path = '/animals';
+
+  static String pathFor(AnimalId? selected) => selected == null ? path : '$path?selected=${selected.value}';
+
+  final AnimalId? selectedId;
+
+  @override
+  State<AnimalsScreen> createState() => _AnimalsScreenState();
+}
+
+class _AnimalsScreenState extends State<AnimalsScreen> {
+  late final AnimalsBloc _bloc = context.read<AnimalsBloc>();
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc.add(AnimalSelected(widget.selectedId));
+  }
+
+  @override
+  void didUpdateWidget(AnimalsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedId != widget.selectedId) _bloc.add(AnimalSelected(widget.selectedId));
+  }
+
+  /// Tapping the selected animal again clears the selection.
+  void _toggle(AnimalId id) => context.go(AnimalsScreen.pathFor(id == widget.selectedId ? null : id));
 
   @override
   Widget build(BuildContext context) {
     final fake = context.read<BackofficeDependencies>().fakeRepository;
-    final bloc = context.read<AnimalsBloc>();
 
     return Scaffold(
       appBar: AppBar(
@@ -20,7 +50,7 @@ class AnimalsScreen extends StatelessWidget {
           PopupMenuButton<AnimalsFilter>(
             tooltip: 'Filter',
             icon: const Icon(Icons.filter_list),
-            onSelected: (filter) => bloc.add(AnimalsFilterChanged(filter)),
+            onSelected: (filter) => _bloc.add(AnimalsFilterChanged(filter)),
             itemBuilder: (_) => [
               for (final filter in AnimalsFilter.values)
                 PopupMenuItem(value: filter, child: Text(_filterLabel(filter))),
@@ -30,7 +60,7 @@ class AnimalsScreen extends StatelessWidget {
             TextButton.icon(
               onPressed: () {
                 fake.failNextRequest();
-                bloc.add(const AnimalsRetried());
+                _bloc.add(const AnimalsRetried());
               },
               icon: const Icon(Icons.bug_report_outlined),
               label: const Text('Simuliraj grešku'),
@@ -39,31 +69,21 @@ class AnimalsScreen extends StatelessWidget {
       ),
       body: BlocBuilder<AnimalsBloc, AnimalsState>(
         builder: (context, state) => switch (state) {
-          AnimalsLoading() => const Center(child: CircularProgressIndicator()),
-          AnimalsFailure() => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.cloud_off, size: 48),
-                const SizedBox(height: 12),
-                const Text('Učitavanje nije uspelo.'),
-                const SizedBox(height: 12),
-                FilledButton(onPressed: () => bloc.add(const AnimalsRetried()), child: const Text('Pokušaj ponovo')),
-              ],
-            ),
-          ),
-          AnimalsEmpty(:final filter) => Center(child: Text('Nema životinja za filter „${_filterLabel(filter)}“.')),
-          AnimalsLoaded(:final animals, :final selectedId) => ListView.separated(
+          AnimalsLoading() => const LoadingView(),
+          AnimalsFailure() => FailureView(onRetry: () => _bloc.add(const AnimalsRetried())),
+          AnimalsEmpty(:final filter) => EmptyView(message: 'Nema životinja za filter „${_filterLabel(filter)}“.'),
+          AnimalsLoaded(:final animals, :final selectedId) => ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: animals.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final animal = animals[index];
               return ListTile(
-                leading: const Icon(Icons.pets),
+                leading: AnimalPhoto(animal: animal),
                 title: Text(animal.name.text),
-                subtitle: Text('${_speciesLabel(animal.species)} · ${_statusLabel(animal.status)}'),
+                subtitle: Text(animal.species.label),
+                trailing: StatusBadge(status: animal.status),
                 selected: animal.id == selectedId,
-                onTap: () => bloc.add(AnimalSelected(animal.id)),
+                onTap: () => _toggle(animal.id),
               );
             },
           ),
@@ -73,6 +93,7 @@ class AnimalsScreen extends StatelessWidget {
   }
 }
 
+/// Stays in the app: `ui` must not depend on `blocs`, and AnimalsFilter lives there.
 String _filterLabel(AnimalsFilter filter) => switch (filter) {
   AnimalsFilter.all => 'Sve',
   AnimalsFilter.received => 'Primljene',
@@ -82,21 +103,4 @@ String _filterLabel(AnimalsFilter filter) => switch (filter) {
   AnimalsFilter.adopted => 'Udomljene',
   AnimalsFilter.permanentResident => 'Stalni stanari',
   AnimalsFilter.returned => 'Vraćene',
-};
-
-String _speciesLabel(Species species) => switch (species) {
-  Species.dog => 'Pas',
-  Species.cow => 'Krava',
-  Species.goat => 'Koza',
-  Species.horse => 'Konj',
-};
-
-String _statusLabel(AnimalStatus status) => switch (status) {
-  Received() => 'Primljena',
-  InQuarantine() => 'U karantinu',
-  ReadyForAdoption() => 'Spremna za udomljavanje',
-  Reserved() => 'Rezervisana',
-  Adopted() => 'Udomljena',
-  PermanentResident() => 'Stalni stanar',
-  Returned() => 'Vraćena',
 };

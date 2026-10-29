@@ -26,6 +26,7 @@ Animal _animal(
   required String enclosure,
   required DateTime receivedAt,
   required AnimalStatus status,
+  String? photo,
 }) {
   return Animal(
     id: AnimalId(id),
@@ -36,6 +37,7 @@ Animal _animal(
     enclosureId: EnclosureId(enclosure),
     status: status,
     receivedAt: receivedAt,
+    photoUrl: photo,
   );
 }
 
@@ -97,6 +99,7 @@ final seedAnimals = [
     enclosure: 'S-1',
     receivedAt: DateTime(2026, 6, 10),
     status: ReadyForAdoption(since: DateTime(2026, 7, 1)),
+    photo: 'assets/animals/cute_cow.jpg',
   ),
   _animal(
     'a-05',

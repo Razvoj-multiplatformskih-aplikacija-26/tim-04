@@ -31,6 +31,26 @@ void main() {
     expect(find.text('Spremna za udomljavanje'), findsOneWidget);
   });
 
+  testWidgets('AnimalPhoto shows the photo, or a placeholder without one', (tester) async {
+    Animal bela({String? photo}) => Animal(
+      id: const AnimalId('a-04'),
+      name: AnimalName.parse('Bela').valueOrNull!,
+      species: Species.cow,
+      birthDate: DateTime(2023, 6, 2),
+      description: 'Mirna krava.',
+      enclosureId: const EnclosureId('S-1'),
+      status: ReadyForAdoption(since: DateTime(2026, 7, 1)),
+      receivedAt: DateTime(2026, 6, 10),
+      photoUrl: photo,
+    );
+
+    await tester.pumpWidget(_wrap(AnimalPhoto(animal: bela(photo: 'assets/animals/cute_cow.jpg'))));
+    expect(find.byType(Image), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(AnimalPhoto(animal: bela())));
+    expect(find.byIcon(Icons.grass), findsOneWidget);
+  });
+
   testWidgets('FailureView calls onRetry', (tester) async {
     var retried = 0;
     await tester.pumpWidget(_wrap(FailureView(onRetry: () => retried++)));

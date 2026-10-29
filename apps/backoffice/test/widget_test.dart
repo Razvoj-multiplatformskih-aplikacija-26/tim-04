@@ -4,6 +4,7 @@ import 'package:backoffice/data/seed.dart';
 import 'package:backoffice/dependencies.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 BackofficeDependencies _dependencies(FakeShelterRepository repository) => BackofficeDependencies(
   repository: repository,
@@ -13,11 +14,17 @@ BackofficeDependencies _dependencies(FakeShelterRepository repository) => Backof
   fakeRepository: repository,
 );
 
-Future<FakeShelterRepository> _start(WidgetTester tester, {FakeShelterRepository? repository}) async {
+Future<FakeShelterRepository> _start(
+  WidgetTester tester, {
+  FakeShelterRepository? repository,
+  String location = '/animals',
+}) async {
   final repo = repository ?? FakeShelterRepository(latency: const Duration(milliseconds: 10));
-  await tester.pumpWidget(BackofficeApp(dependencies: _dependencies(repo)));
+  await tester.pumpWidget(BackofficeApp(dependencies: _dependencies(repo), initialLocation: location));
   return repo;
 }
+
+ListTile _tileOf(WidgetTester tester, String name) => tester.widget<ListTile>(find.widgetWithText(ListTile, name));
 
 void main() {
   testWidgets('shows a spinner first, then the animals from the seed', (tester) async {
@@ -29,7 +36,7 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('Rex'), findsOneWidget);
-    expect(find.text('Pas · Spremna za udomljavanje'), findsWidgets);
+    expect(find.text('Spremna za udomljavanje'), findsWidgets);
   });
 
   testWidgets('shows an error with a retry button when loading fails', (tester) async {
@@ -82,18 +89,49 @@ void main() {
     expect(find.text('Žućko'), findsNothing);
   });
 
-  testWidgets('tapping an animal selects it', (tester) async {
+  testWidgets('tapping an animal selects it and puts it in the address', (tester) async {
     await _start(tester);
     await tester.pumpAndSettle();
 
-    ListTile tileOf(String name) => tester.widget<ListTile>(find.widgetWithText(ListTile, name));
-
-    expect(tileOf('Rex').selected, isFalse);
+    expect(_tileOf(tester, 'Rex').selected, isFalse);
 
     await tester.tap(find.text('Rex'));
     await tester.pumpAndSettle();
 
-    expect(tileOf('Rex').selected, isTrue);
-    expect(tileOf('Luna').selected, isFalse);
+    expect(_tileOf(tester, 'Rex').selected, isTrue);
+    expect(_tileOf(tester, 'Luna').selected, isFalse);
+    expect(_location(tester), '/animals?selected=a-01');
   });
+
+  testWidgets('opening a link with ?selected= selects that animal', (tester) async {
+    await _start(tester, location: '/animals?selected=a-02');
+    await tester.pumpAndSettle();
+
+    expect(_tileOf(tester, 'Luna').selected, isTrue);
+    expect(_tileOf(tester, 'Rex').selected, isFalse);
+  });
+
+  testWidgets('tapping the selected animal again clears the selection', (tester) async {
+    await _start(tester, location: '/animals?selected=a-01');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Rex'));
+    await tester.pumpAndSettle();
+
+    expect(_tileOf(tester, 'Rex').selected, isFalse);
+    expect(_location(tester), '/animals');
+  });
+
+  testWidgets('the root address redirects to the animals list', (tester) async {
+    await _start(tester, location: '/');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rex'), findsOneWidget);
+    expect(_location(tester), '/animals');
+  });
+}
+
+String _location(WidgetTester tester) {
+  final context = tester.element(find.byType(Scaffold));
+  return GoRouter.of(context).state.uri.toString();
 }

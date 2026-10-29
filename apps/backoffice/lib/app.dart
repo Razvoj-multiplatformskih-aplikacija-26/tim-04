@@ -2,35 +2,54 @@ import 'package:blocs/blocs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 
 import 'dependencies.dart';
+import 'router.dart';
 import 'screens/animals_screen.dart';
 
-class BackofficeApp extends StatelessWidget {
-  const BackofficeApp({super.key, required this.dependencies});
+class BackofficeApp extends StatefulWidget {
+  const BackofficeApp({super.key, required this.dependencies, this.initialLocation = AnimalsScreen.path});
 
   static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Cyrl');
 
   final BackofficeDependencies dependencies;
 
+  final String initialLocation;
+
+  @override
+  State<BackofficeApp> createState() => _BackofficeAppState();
+}
+
+class _BackofficeAppState extends State<BackofficeApp> {
+  late final GoRouter _router = createRouter(initialLocation: widget.initialLocation);
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final dependencies = widget.dependencies;
     return RepositoryProvider.value(
       value: dependencies,
       child: BlocProvider(
         create: (_) => AnimalsBloc(repository: dependencies.repository)..add(const AnimalsRequested()),
-        child: MaterialApp(
+        child: MaterialApp.router(
           title: 'Utočište — Backoffice',
-          theme: ThemeData(colorSchemeSeed: const Color(0xFF2E7D5B)),
-          darkTheme: ThemeData(colorSchemeSeed: const Color(0xFF2E7D5B), brightness: Brightness.dark),
-          locale: locale,
-          supportedLocales: const [locale],
+          theme: UtocisteTheme.light(),
+          darkTheme: UtocisteTheme.dark(),
+          locale: BackofficeApp.locale,
+          supportedLocales: const [BackofficeApp.locale],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const AnimalsScreen(),
+          routerConfig: _router,
         ),
       ),
     );
