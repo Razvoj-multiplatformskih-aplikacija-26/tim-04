@@ -32,8 +32,7 @@ GoRouter createRouter() {
                       GoRoute(
                         path: 'request',
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (context, state) =>
-                            RequestFormScreen(animalId: AnimalId(state.pathParameters['id']!)),
+                        builder: (context, state) => RequestFormScreen(animalId: AnimalId(state.pathParameters['id']!)),
                       ),
                     ],
                   ),
