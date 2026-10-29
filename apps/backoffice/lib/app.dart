@@ -7,7 +7,7 @@ import 'package:ui/ui.dart';
 
 import 'dependencies.dart';
 import 'router.dart';
-import 'screens/animals_screen.dart';
+import 'screens/animals/animals_screen.dart';
 
 class BackofficeApp extends StatefulWidget {
   const BackofficeApp({super.key, required this.dependencies, this.initialLocation = AnimalsScreen.path});
@@ -36,8 +36,18 @@ class _BackofficeAppState extends State<BackofficeApp> {
     final dependencies = widget.dependencies;
     return RepositoryProvider.value(
       value: dependencies,
-      child: BlocProvider(
-        create: (_) => AnimalsBloc(repository: dependencies.repository)..add(const AnimalsRequested()),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => AnimalsBloc(repository: dependencies.repository)..add(const AnimalsRequested())),
+          BlocProvider(
+            create: (_) => AdoptionRequestBloc(
+              repository: dependencies.repository,
+              user: dependencies.user,
+              clock: dependencies.clock,
+              newId: dependencies.newId,
+            )..add(const MyRequestsRequested()),
+          ),
+        ],
         child: MaterialApp.router(
           title: 'Utočište — Backoffice',
           theme: UtocisteTheme.light(),

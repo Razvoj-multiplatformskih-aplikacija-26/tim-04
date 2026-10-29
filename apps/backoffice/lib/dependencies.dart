@@ -10,6 +10,7 @@ final class BackofficeDependencies {
     required this.user,
     required this.clock,
     required this.newId,
+    this.users = const [],
     this.fakeRepository,
   });
 
@@ -21,6 +22,7 @@ final class BackofficeDependencies {
       user: coordinator,
       clock: DateTime.now,
       newId: () => 'r-new-${++nextId}',
+      users: seedUsers,
       fakeRepository: fake,
     );
   }
@@ -29,5 +31,10 @@ final class BackofficeDependencies {
   final User user;
   final DateTime Function() clock;
   final String Function() newId;
+
+  
+  final List<User> users;
   final FakeShelterRepository? fakeRepository;
+
+  String nameOf(UserId id) => users.where((u) => u.id == id).firstOrNull?.username ?? id.value;
 }
