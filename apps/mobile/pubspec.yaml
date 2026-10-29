@@ -19,6 +19,8 @@ dependencies:
     sdk: flutter
   go_router: 18.0.2
   intl: 0.20.3
+  ui:
+    path: ../../packages/ui
 
 dev_dependencies:
   flutter_test:

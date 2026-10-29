@@ -12,6 +12,7 @@ const milica = User(id: UserId('u-milica'), username: 'Milica Stojanović', role
 const stefan = User(id: UserId('u-stefan'), username: 'Stefan Ilić', role: Role.adopter);
 
 const seedUsers = [coordinator, seniorVolunteer, veterinarian, ana, marko, jelena, nikola, milica, stefan];
+const currentUser = ana;
 
 AnimalName _name(String text) => AnimalName.parse(text).valueOrNull!;
 
