@@ -27,10 +27,17 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Test shared packages on the VM and in Chrome
+      - name: Test shared packages
         run: |
+          set -e
           for package in packages/*/; do
             echo "::group::${package}"
-            (cd "${package}" && dart test -p vm,chrome)
+            if grep -q 'sdk: flutter' "${package}pubspec.yaml"; then
+              # Flutter packages (ui) need the Flutter test runner.
+              (cd "${package}" && flutter test)
+            else
+              # Pure Dart packages run on the VM and in Chrome.
+              (cd "${package}" && dart test -p vm,chrome)
+            fi
             echo "::endgroup::"
           done
