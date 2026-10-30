@@ -90,7 +90,8 @@ class _HeaderRow extends StatelessWidget {
   }
 }
 
-class AnimalsTableRow extends StatelessWidget {
+/// One animal in the table. Tab focuses it (a leaf-green outline shows where the focus is) and Enter or Space selects it.
+class AnimalsTableRow extends StatefulWidget {
   const AnimalsTableRow({
     super.key,
     required this.animal,
@@ -107,21 +108,60 @@ class AnimalsTableRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<AnimalsTableRow> createState() => _AnimalsTableRowState();
+}
+
+class _AnimalsTableRowState extends State<AnimalsTableRow> {
+  bool _focused = false;
+
+  @override
+  void didUpdateWidget(AnimalsTableRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ↑/↓ can select a row that is scrolled out of view, so bring it back once it is laid out.
+    if (widget.selected && !oldWidget.selected) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
+  }
+
+  Future<void> _reveal() async {
+    const duration = Duration(milliseconds: 150);
+    // The first call scrolls down when the row is below the view, the second scrolls up when it is above.
+    if (!mounted) return;
+    await Scrollable.ensureVisible(
+      context,
+      duration: duration,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
+    if (!mounted) return;
+    await Scrollable.ensureVisible(
+      context,
+      duration: duration,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final animal = widget.animal;
+    final compact = widget.compact;
+    final now = widget.now;
     Widget cell(int flex, Widget child) => Expanded(flex: flex, child: child);
     Widget text(String value) => Text(value, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Material(
-        color: selected ? scheme.tertiaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        color: widget.selected ? scheme.tertiaryContainer : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: _focused ? BorderSide(color: scheme.primary, width: 2) : BorderSide.none,
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           hoverColor: scheme.tertiaryContainer.withValues(alpha: 0.35),
-          onTap: onTap,
+          focusColor: scheme.tertiaryContainer.withValues(alpha: 0.5),
+          onFocusChange: (focused) => setState(() => _focused = focused),
+          onTap: widget.onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(

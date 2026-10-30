@@ -6,6 +6,7 @@ import 'package:backoffice/screens/animals/animal_details.dart';
 import 'package:backoffice/screens/animals/animals_table.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,6 +62,13 @@ Future<void> _tapInDialog(WidgetTester tester, String label) async {
 
 Finder _inRow(String name, String text) =>
     find.descendant(of: find.widgetWithText(AnimalsTableRow, name), matching: find.text(text));
+
+Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool control = false}) async {
+  if (control) await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+  await tester.sendKeyEvent(key);
+  if (control) await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  await tester.pumpAndSettle();
+}
 
 const _rexDescription = 'Miran i druželjubiv pas srednje veličine, voli šetnje i decu.';
 
@@ -284,6 +292,100 @@ void main() {
       expect(find.text('Nemate dozvolu za ovu radnju.'), findsOneWidget);
       expect(find.text('Odobren'), findsNothing);
       expect(_inRow('Rex', 'Rezervisana'), findsNothing);
+    });
+  });
+
+  group('keyboard', () {
+    testWidgets('↓ and ↑ move the selection, Esc closes the panel', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-01');
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-02');
+      expect(_rowOf(tester, 'Luna').selected, isTrue);
+
+      await _press(tester, LogicalKeyboardKey.arrowUp);
+      expect(_location(tester), '/animals?selected=a-01');
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(_location(tester), '/animals');
+      expect(find.text(_rexDescription), findsNothing);
+    });
+
+    testWidgets('↓ past the bottom of the view scrolls the selected row into sight', (tester) async {
+      await _start(tester, size: const Size(1400, 500));
+      await tester.pumpAndSettle();
+      final last = seedAnimals.last;
+
+      for (var i = 0; i < seedAnimals.length; i++) {
+        await _press(tester, LogicalKeyboardKey.arrowDown);
+      }
+
+      expect(_location(tester), '/animals?selected=${last.id.value}');
+      expect(find.widgetWithText(AnimalsTableRow, last.name.text).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Enter asks to approve the oldest pending request and Enter confirms', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.enter, control: true);
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Odobren'), findsOneWidget);
+      expect(_inRow('Rex', 'Rezervisana'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+Enter does nothing when no animal is selected', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.enter, control: true);
+
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('F1 lists the shortcuts and Esc closes the list', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.f1);
+      expect(find.text('Prečice'), findsOneWidget);
+      expect(find.text('Pregled prečica'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.text('Prečice'), findsNothing);
+    });
+
+    testWidgets('Tab puts a visible outline on the focused row and Enter selects it', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      Finder outlined() => find.descendant(
+        of: find.byType(AnimalsTableRow),
+        matching: find.byWidgetPredicate(
+          (widget) => switch (widget) {
+            Material(shape: RoundedRectangleBorder(:final side)) => side != BorderSide.none,
+            _ => false,
+          },
+        ),
+      );
+      expect(outlined(), findsNothing);
+
+      // Tab past the AppBar button and the filter chips until a table row has the focus.
+      for (var i = 0; i < 20 && outlined().evaluate().isEmpty; i++) {
+        await _press(tester, LogicalKeyboardKey.tab);
+      }
+      expect(outlined(), findsOneWidget);
+      expect(find.descendant(of: outlined(), matching: find.text('Rex')), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(_location(tester), '/animals?selected=a-01');
     });
   });
 }

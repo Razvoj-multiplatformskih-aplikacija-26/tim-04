@@ -16,7 +16,7 @@ Future<bool> confirmApproval(
       content: Text('$animalName će biti rezervisan/a za: $applicant.$consequence'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Odobri')),
+        FilledButton(autofocus: true, onPressed: () => Navigator.pop(context, true), child: const Text('Odobri')),
       ],
     ),
   );
@@ -31,7 +31,7 @@ Future<bool> confirmRejection(BuildContext context, {required String applicant})
       content: Text('Zahtev korisnika $applicant biće odbijen.'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Odbij')),
+        FilledButton(autofocus: true, onPressed: () => Navigator.pop(context, true), child: const Text('Odbij')),
       ],
     ),
   );

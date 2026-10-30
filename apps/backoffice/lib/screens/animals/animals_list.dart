@@ -28,6 +28,7 @@ class AnimalsList extends StatelessWidget {
             title: Text(animal.name.text),
             subtitle: Text('${animal.species.label} · ${formatAge(animal.ageInMonths(now))}'),
             trailing: StatusBadge(status: animal.status),
+            focusColor: Theme.of(context).colorScheme.tertiaryContainer,
             onTap: () => onSelect(animal.id),
           ),
         );

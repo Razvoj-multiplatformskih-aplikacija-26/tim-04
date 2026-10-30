@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
 import '../../dependencies.dart';
+import '../../shortcuts.dart';
 import 'animal_details.dart';
 import 'animals_filter_bar.dart';
 import 'animals_list.dart';
@@ -47,13 +48,87 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
   void _toggle(AnimalId id) => _select(id == widget.selectedId ? null : id);
 
+  Map<Type, Action<Intent>> _actions() => {
+    MoveSelectionIntent: CallbackAction<MoveSelectionIntent>(onInvoke: (intent) => _move(intent.offset)),
+    ClearSelectionIntent: GuardedCallbackAction<ClearSelectionIntent>(
+      enabled: () => widget.selectedId != null,
+      onInvoke: (_) => _select(null),
+    ),
+    ApproveIntent: GuardedCallbackAction<ApproveIntent>(
+      enabled: () => _oldestPending() != null,
+      onInvoke: (_) => _approveOldest(),
+    ),
+    ShowShortcutsIntent: CallbackAction<ShowShortcutsIntent>(onInvoke: (_) => _showShortcuts()),
+  };
+  void _move(int offset) {
+    final state = _bloc.state;
+    if (state is! AnimalsLoaded) return;
+    final animals = state.animals;
+    final current = animals.indexWhere((a) => a.id == widget.selectedId);
+    final next = (current + offset).clamp(0, animals.length - 1);
+    _select(animals[next].id);
+  }
+
+  Animal? get _selectedAnimal => switch (_bloc.state) {
+    AnimalsLoaded(:final selected) => selected,
+    _ => null,
+  };
+
+  AdoptionRequest? _oldestPending() {
+    final animal = _selectedAnimal;
+    final requests = context.read<AdoptionRequestBloc>().state;
+    if (animal == null || !animal.isAdoptable || requests is! RequestsLoaded) return null;
+    return competingRequests(animal.id, requests.requests).firstOrNull;
+  }
+
+  void _approveOldest() {
+    final animal = _selectedAnimal;
+    final request = _oldestPending();
+    final requests = context.read<AdoptionRequestBloc>().state;
+    if (animal == null || request == null || requests is! RequestsLoaded) return;
+    _approve(animal, request, requests.requests);
+  }
+
+  void _showShortcuts() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Prečice'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final shortcut in shortcutDescriptions())
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(shortcut.keys, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                    Expanded(child: Text(shortcut.description)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AdoptionRequestBloc, AdoptionRequestState>(
-      // Only react to changes after an action, not to the first load of the requests.
       listenWhen: (previous, current) => previous is RequestsLoaded && current is RequestsLoaded,
       listener: _onRequestsChanged,
-      child: _content(),
+      child: Shortcuts(
+        shortcuts: animalsShortcuts(),
+        child: Actions(
+          actions: _actions(),
+          child: Focus(autofocus: true, child: _content()),
+        ),
+      ),
     );
   }
 
