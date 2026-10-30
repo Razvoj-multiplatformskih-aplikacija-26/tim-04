@@ -32,7 +32,6 @@ final class BackofficeDependencies {
   final DateTime Function() clock;
   final String Function() newId;
 
-  
   final List<User> users;
   final FakeShelterRepository? fakeRepository;
 

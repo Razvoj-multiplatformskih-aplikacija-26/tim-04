@@ -10,14 +10,13 @@ import 'animal_details.dart';
 import 'animals_filter_bar.dart';
 import 'animals_list.dart';
 import 'animals_table.dart';
-
+import 'confirm_dialog.dart';
 
 class AnimalsScreen extends StatefulWidget {
   const AnimalsScreen({super.key, this.selectedId});
 
   static const path = '/animals';
 
-  
   static const wideBreakpoint = 840.0;
 
   static String pathFor(AnimalId? selected) => selected == null ? path : '$path?selected=${selected.value}';
@@ -46,11 +45,31 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
   void _select(AnimalId? id) => context.go(AnimalsScreen.pathFor(id));
 
-  
   void _toggle(AnimalId id) => _select(id == widget.selectedId ? null : id);
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<AdoptionRequestBloc, AdoptionRequestState>(
+      // Only react to changes after an action, not to the first load of the requests.
+      listenWhen: (previous, current) => previous is RequestsLoaded && current is RequestsLoaded,
+      listener: _onRequestsChanged,
+      child: _content(),
+    );
+  }
+
+  /// Approving or rejecting goes through [AdoptionRequestBloc]; the animal's new status (Reserved) has to be reloaded
+  /// into [AnimalsBloc] here, and a refused action is explained in a snack bar.
+  void _onRequestsChanged(BuildContext context, AdoptionRequestState state) {
+    if (state is! RequestsLoaded) return;
+    final error = state.error;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } else {
+      _bloc.add(const AnimalsRefreshed());
+    }
+  }
+
+  Widget _content() {
     return BlocBuilder<AnimalsBloc, AnimalsState>(
       builder: (context, state) => LayoutBuilder(
         builder: (context, constraints) {
@@ -131,8 +150,14 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
   Widget _details(Animal animal) {
     return BlocBuilder<AdoptionRequestBloc, AdoptionRequestState>(
-      builder: (context, requests) =>
-          AnimalDetails(animal: animal, requests: requests, now: _dependencies.clock(), nameOf: _dependencies.nameOf),
+      builder: (context, requests) => AnimalDetails(
+        animal: animal,
+        requests: requests,
+        now: _dependencies.clock(),
+        nameOf: _dependencies.nameOf,
+        onApprove: (request) => _approve(animal, request, requests is RequestsLoaded ? requests.requests : const []),
+        onReject: _reject,
+      ),
     );
   }
 
@@ -149,5 +174,28 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
         label: const Text('Simuliraj grešku'),
       ),
     ];
+  }
+
+  Future<void> _approve(Animal animal, AdoptionRequest request, List<AdoptionRequest> all) async {
+    // Approving one request rejects every other pending request for the same animal, so the dialog names them.
+    final others = [
+      for (final r in all)
+        if (r.animalId == animal.id && r.status == AdoptionRequestStatus.pending && r.id != request.id)
+          _dependencies.nameOf(r.applicantId),
+    ];
+    final ok = await confirmApproval(
+      context,
+      animalName: animal.name.text,
+      applicant: _dependencies.nameOf(request.applicantId),
+      othersRejected: others,
+    );
+    if (!ok || !mounted) return;
+    context.read<AdoptionRequestBloc>().add(RequestApproved(request.id));
+  }
+
+  Future<void> _reject(AdoptionRequest request) async {
+    final ok = await confirmRejection(context, applicant: _dependencies.nameOf(request.applicantId));
+    if (!ok || !mounted) return;
+    context.read<AdoptionRequestBloc>().add(RequestRejected(request.id));
   }
 }

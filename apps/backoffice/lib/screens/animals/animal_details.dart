@@ -12,6 +12,8 @@ class AnimalDetails extends StatelessWidget {
     required this.requests,
     required this.now,
     required this.nameOf,
+    required this.onApprove,
+    required this.onReject,
   });
 
   final Animal animal;
@@ -19,6 +21,8 @@ class AnimalDetails extends StatelessWidget {
   final AdoptionRequestState requests;
   final DateTime now;
   final String Function(UserId) nameOf;
+  final ValueChanged<AdoptionRequest> onApprove;
+  final ValueChanged<AdoptionRequest> onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +84,14 @@ class AnimalDetails extends StatelessWidget {
           Text('Zahtevi za udomljavanje (${mine.length})', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (mine.isEmpty) Text('Još nema zahteva za ${animal.name.text}.', style: theme.textTheme.bodyMedium),
-          for (final request in mine) _RequestCard(request: request, applicant: nameOf(request.applicantId)),
+          for (final request in mine)
+            _RequestCard(
+              request: request,
+              applicant: nameOf(request.applicantId),
+              onApprove: onApprove,
+              onReject: onReject,
+              canApprove: animal.isAdoptable,
+            ),
         ];
     }
   }
@@ -125,10 +136,19 @@ class _Fact extends StatelessWidget {
 }
 
 class _RequestCard extends StatelessWidget {
-  const _RequestCard({required this.request, required this.applicant});
+  const _RequestCard({
+    required this.request,
+    required this.applicant,
+    required this.onApprove,
+    required this.onReject,
+    required this.canApprove,
+  });
 
   final AdoptionRequest request;
   final String applicant;
+  final ValueChanged<AdoptionRequest> onApprove;
+  final ValueChanged<AdoptionRequest> onReject;
+  final bool canApprove;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +185,17 @@ class _RequestCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(request.motivation.text, style: theme.textTheme.bodyMedium),
+              if (request.status == AdoptionRequestStatus.pending) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(onPressed: () => onReject(request), child: const Text('Odbij')),
+                    const SizedBox(width: 8),
+                    FilledButton(onPressed: canApprove ? () => onApprove(request) : null, child: const Text('Odobri')),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:backoffice/data/seed.dart';
 import 'package:backoffice/dependencies.dart';
 import 'package:backoffice/screens/animals/animal_details.dart';
 import 'package:backoffice/screens/animals/animals_table.dart';
+import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -11,9 +12,9 @@ import 'package:go_router/go_router.dart';
 const _wide = Size(1400, 900);
 const _narrow = Size(600, 900);
 
-BackofficeDependencies _dependencies(FakeShelterRepository repository) => BackofficeDependencies(
+BackofficeDependencies _dependencies(FakeShelterRepository repository, User user) => BackofficeDependencies(
   repository: repository,
-  user: coordinator,
+  user: user,
   clock: () => DateTime(2026, 10, 29, 10),
   newId: () => 'r-test',
   users: seedUsers,
@@ -25,13 +26,14 @@ Future<FakeShelterRepository> _start(
   FakeShelterRepository? repository,
   String location = '/animals',
   Size size = _wide,
+  User user = coordinator,
 }) async {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final repo = repository ?? FakeShelterRepository(latency: const Duration(milliseconds: 10));
-  await tester.pumpWidget(BackofficeApp(dependencies: _dependencies(repo), initialLocation: location));
+  await tester.pumpWidget(BackofficeApp(dependencies: _dependencies(repo, user), initialLocation: location));
   return repo;
 }
 
@@ -42,6 +44,23 @@ String _location(WidgetTester tester) {
   final context = tester.element(find.byType(Scaffold).first);
   return GoRouter.of(context).state.uri.toString();
 }
+
+/// Tall enough that every request card in the panel is built without scrolling.
+const _tall = Size(1400, 2400);
+
+/// Taps the first request button with [label] in the details panel.
+Future<void> _tapRequestButton(WidgetTester tester, String label) async {
+  await tester.tap(find.descendant(of: find.byType(AnimalDetails), matching: find.text(label)).first);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tapInDialog(WidgetTester tester, String label) async {
+  await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(label)));
+  await tester.pumpAndSettle();
+}
+
+Finder _inRow(String name, String text) =>
+    find.descendant(of: find.widgetWithText(AnimalsTableRow, name), matching: find.text(text));
 
 const _rexDescription = 'Miran i druželjubiv pas srednje veličine, voli šetnje i decu.';
 
@@ -207,5 +226,64 @@ void main() {
 
     expect(find.text('Rex'), findsOneWidget);
     expect(_location(tester), '/animals');
+  });
+
+  group('approving and rejecting requests', () {
+    testWidgets('approving asks first, then reserves the animal and rejects the other requests', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _tapRequestButton(tester, 'Odobri');
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('Automatski će biti odbijeni zahtevi'), findsOneWidget);
+
+      await _tapInDialog(tester, 'Odobri');
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Odobren'), findsOneWidget);
+      expect(find.text('Odbijen'), findsNWidgets(2));
+      expect(find.text('Na čekanju'), findsNothing);
+      expect(_inRow('Rex', 'Rezervisana'), findsOneWidget);
+      expect(_rowOf(tester, 'Rex').selected, isTrue);
+    });
+
+    testWidgets('"Otkaži" in the dialog changes nothing', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _tapRequestButton(tester, 'Odobri');
+      await _tapInDialog(tester, 'Otkaži');
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Na čekanju'), findsNWidgets(3));
+      expect(find.text('Odobren'), findsNothing);
+      expect(_inRow('Rex', 'Rezervisana'), findsNothing);
+    });
+
+    testWidgets('rejecting changes only that request', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _tapRequestButton(tester, 'Odbij');
+      await _tapInDialog(tester, 'Odbij');
+
+      expect(find.text('Odbijen'), findsOneWidget);
+      expect(find.text('Na čekanju'), findsNWidgets(2));
+      expect(_inRow('Rex', 'Rezervisana'), findsNothing);
+    });
+
+    testWidgets('a refused approval is explained in a snack bar', (tester) async {
+      // An adopter is not allowed to approve, so the domain refuses with NotAllowed.
+      await _start(tester, location: '/animals?selected=a-01', size: _tall, user: marko);
+      await tester.pumpAndSettle();
+
+      await _tapRequestButton(tester, 'Odobri');
+      await _tapInDialog(tester, 'Odobri');
+
+      expect(find.text('Nemate dozvolu za ovu radnju.'), findsOneWidget);
+      expect(find.text('Odobren'), findsNothing);
+      expect(_inRow('Rex', 'Rezervisana'), findsNothing);
+    });
   });
 }
