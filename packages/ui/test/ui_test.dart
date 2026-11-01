@@ -31,6 +31,12 @@ void main() {
     expect(find.text('Spremna za udomljavanje'), findsOneWidget);
   });
 
+  testWidgets('RequestStatusChip shows the request status label', (tester) async {
+    await tester.pumpWidget(_wrap(const RequestStatusChip(status: AdoptionRequestStatus.withdrawn)));
+
+    expect(find.text('Povučen'), findsOneWidget);
+  });
+
   testWidgets('AnimalPhoto shows the photo, or a placeholder without one', (tester) async {
     Animal bela({String? photo}) => Animal(
       id: const AnimalId('a-04'),

@@ -1,6 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
-import 'package:ui/ui.dart';
+
+import '../text/serbian.dart';
 
 class RequestStatusChip extends StatelessWidget {
   const RequestStatusChip({super.key, required this.status});

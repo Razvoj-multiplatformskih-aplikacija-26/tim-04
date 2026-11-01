@@ -6,8 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ui/ui.dart';
 
-import '../widgets/request_status_chip.dart';
-
 class MyRequestsScreen extends StatelessWidget {
   const MyRequestsScreen({super.key});
 

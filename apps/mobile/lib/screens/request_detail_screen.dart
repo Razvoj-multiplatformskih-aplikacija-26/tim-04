@@ -5,8 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:ui/ui.dart';
 
-import '../widgets/request_status_chip.dart';
-
 class RequestDetailScreen extends StatelessWidget {
   const RequestDetailScreen({super.key, required this.id});
 
