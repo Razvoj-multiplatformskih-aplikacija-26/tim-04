@@ -32,3 +32,7 @@ final class RequestRejected extends AdoptionRequestEvent {
 
   final AdoptionRequestId id;
 }
+
+final class RequestsNoticeAcknowledged extends AdoptionRequestEvent {
+  const RequestsNoticeAcknowledged();
+}
