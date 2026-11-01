@@ -132,16 +132,20 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     );
   }
 
-  /// Approving or rejecting goes through [AdoptionRequestBloc]; the animal's new status (Reserved) has to be reloaded
-  /// into [AnimalsBloc] here, and a refused action is explained in a snack bar.
   void _onRequestsChanged(BuildContext context, AdoptionRequestState state) {
     if (state is! RequestsLoaded) return;
-    final error = state.error;
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-    } else {
-      _bloc.add(const AnimalsRefreshed());
+    final notice = state.notice;
+    if (notice == null) return;
+    switch (notice) {
+      case RequestSaved():
+        _bloc.add(const AnimalsRefreshed());
+      case RequestRefused(:final error):
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      case RequestFailed():
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Akcija nije uspela. Pokušaj ponovo.')));
     }
+    context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());
   }
 
   Widget _content() {
