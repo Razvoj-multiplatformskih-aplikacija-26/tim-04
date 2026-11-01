@@ -64,4 +64,38 @@ void main() {
       const AnimalsEmpty(AnimalsFilter.adopted),
     ],
   );
+
+  blocTest<AnimalsBloc, AnimalsState>(
+    'refresh reloads without showing the spinner',
+    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+    act: (bloc) async {
+      bloc.add(const AnimalsRequested());
+      await Future<void>.delayed(Duration.zero);
+      await bloc.repository.saveAnimal(ready.copyWith(status: resident.status));
+      bloc.add(const AnimalsRefreshed());
+    },
+    expect: () => [
+      const AnimalsLoading(),
+      AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all),
+      AnimalsLoaded(
+        animals: [ready.copyWith(status: resident.status)],
+        filter: AnimalsFilter.all,
+      ),
+    ],
+  );
+
+  blocTest<AnimalsBloc, AnimalsState>(
+    'a failed refresh keeps the current list',
+    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+    act: (bloc) async {
+      bloc.add(const AnimalsRequested());
+      await Future<void>.delayed(Duration.zero);
+      (bloc.repository as FakeShelterRepository).failNextRequest();
+      bloc.add(const AnimalsRefreshed());
+    },
+    expect: () => [
+      const AnimalsLoading(),
+      AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all),
+    ],
+  );
 }
