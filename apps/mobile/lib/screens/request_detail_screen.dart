@@ -2,7 +2,6 @@ import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:ui/ui.dart';
 
 class RequestDetailScreen extends StatelessWidget {
@@ -66,8 +65,6 @@ class _Message extends StatelessWidget {
 class _RequestDetail extends StatelessWidget {
   const _RequestDetail({required this.request, required this.busy});
 
-  static final _date = DateFormat('d. MMMM y.', 'sr_Latn');
-
   final AdoptionRequest request;
   final bool busy;
 
@@ -112,7 +109,7 @@ class _RequestDetail extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                _DetailRow(icon: Icons.event_outlined, label: 'Podnet', value: _date.format(request.createdAt)),
+                _DetailRow(icon: Icons.event_outlined, label: 'Podnet', value: formatLongDate(request.createdAt)),
                 const Divider(indent: 16, endIndent: 16),
                 _DetailRow(icon: Icons.info_outline, label: 'Stanje', value: request.status.label),
               ],

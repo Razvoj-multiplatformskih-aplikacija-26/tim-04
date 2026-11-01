@@ -2,6 +2,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
   theme: UtocisteTheme.light(),
@@ -9,6 +10,18 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  setUpAll(() => initializeDateFormatting(serbianLatin));
+  test('ages use Serbian plural forms', () {
+    expect(ageLabel(5), '5 meseci');
+    expect(ageLabel(12), '1 godina');
+    expect(ageLabel(26), '2 godine i 2 meseca');
+    expect(ageLabel(61), '5 godina i 1 mesec');
+    expect(ageLabel(21 * 12), '21 godina');
+  });
+
+  test('dates are written out in Serbian', () {
+    expect(formatLongDate(DateTime(2026, 8, 3)), '3. avgust 2026.');
+  });
   test('statuses, species and request statuses have Serbian labels', () {
     expect(const PermanentResident(reason: 'Starost').label, 'Stalni stanar');
     expect(Species.cow.label, 'Krava');

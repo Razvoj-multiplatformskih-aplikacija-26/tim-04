@@ -12,6 +12,7 @@ dependencies:
     path: ../domain
   flutter:
     sdk: flutter
+  intl: 0.20.3
 
 dev_dependencies:
   flutter_lints: 6.0.0

@@ -3,7 +3,6 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:ui/ui.dart';
 
 class MyRequestsScreen extends StatelessWidget {
@@ -52,8 +51,6 @@ class _RequestList extends StatelessWidget {
 class _RequestCard extends StatelessWidget {
   const _RequestCard({required this.request});
 
-  static final _date = DateFormat('d. MMMM y.', 'sr_Latn');
-
   final AdoptionRequest request;
 
   @override
@@ -75,7 +72,7 @@ class _RequestCard extends StatelessWidget {
                   children: [
                     Text(animal?.name.text ?? request.animalId.value, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 4),
-                    Text('Podnet ${_date.format(request.createdAt)}', style: theme.textTheme.bodyMedium),
+                    Text('Podnet ${formatLongDate(request.createdAt)}', style: theme.textTheme.bodyMedium),
                   ],
                 ),
               ),

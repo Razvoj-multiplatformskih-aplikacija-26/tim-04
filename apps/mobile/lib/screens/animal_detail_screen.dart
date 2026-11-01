@@ -3,7 +3,6 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:ui/ui.dart';
 
 class AnimalDetailScreen extends StatelessWidget {
@@ -31,7 +30,6 @@ class AnimalDetailScreen extends StatelessWidget {
   }
 }
 
-/// Screen with a plain title around a loading, failure or not-found view.
 class _Message extends StatelessWidget {
   const _Message({required this.child});
 
@@ -49,17 +47,13 @@ class _Message extends StatelessWidget {
 class _AnimalDetail extends StatelessWidget {
   const _AnimalDetail({required this.animal});
 
-  static final _date = DateFormat('d. MMMM y.', 'sr_Latn');
-
   final Animal animal;
-
-  String _age(int months) => '${months ~/ 12} god. i ${months % 12} mes.';
 
   List<Widget> _statusRows(AnimalStatus status) => switch (status) {
     Received() || ReadyForAdoption() => const [],
     InQuarantine(:final until) => [
       const Divider(indent: 16, endIndent: 16),
-      _DetailRow(icon: Icons.medical_services_outlined, label: 'U karantinu do', value: _date.format(until)),
+      _DetailRow(icon: Icons.medical_services_outlined, label: 'U karantinu do', value: formatLongDate(until)),
     ],
     Reserved() => [
       const Divider(indent: 16, endIndent: 16),
@@ -67,7 +61,7 @@ class _AnimalDetail extends StatelessWidget {
     ],
     Adopted(:final at) => [
       const Divider(indent: 16, endIndent: 16),
-      _DetailRow(icon: Icons.favorite_outline, label: 'Udomljena', value: _date.format(at)),
+      _DetailRow(icon: Icons.favorite_outline, label: 'Udomljena', value: formatLongDate(at)),
     ],
     PermanentResident(:final reason) => [
       const Divider(indent: 16, endIndent: 16),
@@ -75,7 +69,7 @@ class _AnimalDetail extends StatelessWidget {
     ],
     Returned(:final reason, :final at) => [
       const Divider(indent: 16, endIndent: 16),
-      _DetailRow(icon: Icons.undo_outlined, label: 'Vraćena ${_date.format(at)}', value: reason),
+      _DetailRow(icon: Icons.undo_outlined, label: 'Vraćena ${formatLongDate(at)}', value: reason),
     ],
   };
 
@@ -112,12 +106,12 @@ class _AnimalDetail extends StatelessWidget {
                 _DetailRow(
                   icon: Icons.cake_outlined,
                   label: 'Starost',
-                  value: _age(animal.ageInMonths(DateTime.now())),
+                  value: ageLabel(animal.ageInMonths(DateTime.now())),
                 ),
                 const Divider(indent: 16, endIndent: 16),
                 _DetailRow(icon: Icons.home_outlined, label: 'Boks', value: animal.enclosureId.value),
                 const Divider(indent: 16, endIndent: 16),
-                _DetailRow(icon: Icons.event_outlined, label: 'Primljena', value: _date.format(animal.receivedAt)),
+                _DetailRow(icon: Icons.event_outlined, label: 'Primljena', value: formatLongDate(animal.receivedAt)),
                 ..._statusRows(animal.status),
               ],
             ),
