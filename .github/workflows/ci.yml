@@ -41,3 +41,5 @@ jobs:
             fi
             echo "::endgroup::"
           done
+      - name: Test the mobile app
+        run: cd apps/mobile && flutter test
