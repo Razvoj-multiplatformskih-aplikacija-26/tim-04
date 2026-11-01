@@ -14,6 +14,7 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
       super(const AnimalsLoading()) {
     on<AnimalsRequested>((event, emit) => _load(emit));
     on<AnimalsRetried>((event, emit) => _load(emit));
+    on<AnimalsRefreshed>((event, emit) => _refresh(emit));
     on<AnimalsFilterChanged>((event, emit) {
       _filter = event.filter;
       if (state is AnimalsLoaded || state is AnimalsEmpty) _show(emit);
@@ -44,6 +45,15 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
       _show(emit);
     } catch (error) {
       emit(AnimalsFailure(error));
+    }
+  }
+
+  Future<void> _refresh(Emitter<AnimalsState> emit) async {
+    try {
+      _all = await repository.animals();
+      _show(emit);
+    } catch (_) {
+      // Keep showing the list we already have; the next load will try again.
     }
   }
 
