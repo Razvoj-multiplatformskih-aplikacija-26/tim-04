@@ -44,6 +44,8 @@ abstract final class UtocisteTheme {
     final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
     return ThemeData(
       colorScheme: scheme,
+      fontFamily: 'Nunito',
+      package: 'ui',
       scaffoldBackgroundColor: scheme.surface,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
