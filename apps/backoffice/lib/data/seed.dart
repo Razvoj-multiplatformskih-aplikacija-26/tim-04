@@ -69,6 +69,7 @@ final seedAnimals = [
     enclosure: 'B-1',
     receivedAt: DateTime(2026, 8, 3),
     status: ReadyForAdoption(since: DateTime(2026, 8, 20)),
+    photo: 'assets/animals/rex.jpg',
   ),
   _animal(
     'a-02',
@@ -79,6 +80,7 @@ final seedAnimals = [
     enclosure: 'B-2',
     receivedAt: DateTime(2026, 9, 1),
     status: ReadyForAdoption(since: DateTime(2026, 9, 16)),
+    photo: 'assets/animals/luna.jpg',
   ),
   _animal(
     'a-03',
@@ -89,6 +91,7 @@ final seedAnimals = [
     enclosure: 'I-1',
     receivedAt: DateTime(2026, 7, 14),
     status: ReadyForAdoption(since: DateTime(2026, 8, 1)),
+    photo: 'assets/animals/mrvica.jpg',
   ),
   _animal(
     'a-04',
@@ -110,6 +113,7 @@ final seedAnimals = [
     enclosure: 'P-1',
     receivedAt: DateTime(2026, 10, 27),
     status: Received(receivedBy: coordinator.id, at: DateTime(2026, 10, 27, 9, 30)),
+    photo: 'assets/animals/zucko.jpg',
   ),
   _animal(
     'a-06',
@@ -120,6 +124,7 @@ final seedAnimals = [
     enclosure: 'K-1',
     receivedAt: DateTime(2026, 10, 15),
     status: InQuarantine(since: DateTime(2026, 10, 16), until: DateTime(2026, 11, 6)),
+    photo: 'assets/animals/milka.jpg',
   ),
   _animal(
     'a-07',
@@ -130,6 +135,7 @@ final seedAnimals = [
     enclosure: 'K-2',
     receivedAt: DateTime(2026, 10, 20),
     status: InQuarantine(since: DateTime(2026, 10, 21), until: DateTime(2026, 11, 4)),
+    photo: 'assets/animals/grom.jpg',
   ),
   _animal(
     'a-08',
@@ -144,6 +150,7 @@ final seedAnimals = [
       approvedBy: coordinator.id,
       at: DateTime(2026, 10, 24, 14, 0),
     ),
+    photo: 'assets/animals/maza.jpg',
   ),
   _animal(
     'a-09',
@@ -154,6 +161,7 @@ final seedAnimals = [
     enclosure: 'B-4',
     receivedAt: DateTime(2026, 5, 2),
     status: Adopted(adopterId: stefan.id, at: DateTime(2026, 9, 28)),
+    photo: 'assets/animals/bobi.jpg',
   ),
   _animal(
     'a-10',
@@ -164,6 +172,7 @@ final seedAnimals = [
     enclosure: 'K-3',
     receivedAt: DateTime(2025, 3, 1),
     status: const PermanentResident(reason: 'Starost'),
+    photo: 'assets/animals/zvezda.jpg',
   ),
   _animal(
     'a-11',
@@ -174,6 +183,7 @@ final seedAnimals = [
     enclosure: 'I-2',
     receivedAt: DateTime(2025, 11, 12),
     status: const PermanentResident(reason: 'Zdravstveno stanje'),
+    photo: 'assets/animals/kozica.jpg',
   ),
   _animal(
     'a-12',
@@ -184,6 +194,7 @@ final seedAnimals = [
     enclosure: 'B-5',
     receivedAt: DateTime(2026, 4, 18),
     status: Returned(reason: 'Nedovoljno prostora', at: DateTime(2026, 10, 22)),
+    photo: 'assets/animals/medo.jpg',
   ),
 ];
 

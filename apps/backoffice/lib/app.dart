@@ -12,7 +12,7 @@ import 'screens/animals/animals_screen.dart';
 class BackofficeApp extends StatefulWidget {
   const BackofficeApp({super.key, required this.dependencies, this.initialLocation = AnimalsScreen.path});
 
-  static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Cyrl');
+  static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn');
 
   final BackofficeDependencies dependencies;
 

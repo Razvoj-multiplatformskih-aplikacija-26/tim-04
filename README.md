@@ -11,7 +11,7 @@ Projekat iz predmeta *Razvoj multiplatformskih aplikacija*
 
 ## Opis sistema
 
-Utočište prima napuštene životinje različitih vrsta (psi, mačke, koze, konji), brine o njima i traži im novi dom. Budući vlasnici podnose zahteve za udomljavanje, volonteri i veterinari vode dnevnu evidenciju o životinjama, a koordinator odobrava zahteve i prati kapacitet. Životinje koje zbog zdravlja, starosti ili ponašanja ostaju u utočištu trajno otvaraju se za virtuelno kumstvo — mesečnu pomoć u izdržavanju, u kojoj može učestvovati više kumova.
+Utočište prima napuštene životinje različitih vrsta (psi, krave, koze, konji), brine o njima i traži im novi dom. Budući vlasnici podnose zahteve za udomljavanje, volonteri i veterinari vode dnevnu evidenciju o životinjama, a koordinator odobrava zahteve i prati kapacitet. Životinje koje zbog zdravlja, starosti ili ponašanja ostaju u utočištu trajno otvaraju se za virtuelno kumstvo — mesečnu pomoć u izdržavanju, u kojoj može učestvovati više kumova.
 
 Glavni pojam sistema je **životinja**; zahtevi za udomljavanje i kumstva vezuju se za njen zapis.
 
@@ -28,3 +28,28 @@ Glavni pojam sistema je **životinja**; zahtevi za udomljavanje i kumstva vezuju
 **5. Posao za osoblje.** Koordinator radi sa presekom svih zapisa — tabla popunjenosti boksova, kalendar vakcinacija i terapija za sve životinje, uporedni pregled konkurentskih zahteva po životinji i pregled kumstava — što zahteva veći ekran.
 
 **6. Javni sadržaj.** Bez prijave su dostupni katalog životinja spremnih za udomljavanje sa zasebnom stranicom po životinji, lista životinja koje traže kuma, uslovi udomljavanja i radno vreme; stranica pojedinačne životinje je upravo ono što ljudi traže preko pretraživača.
+
+## Pokretanje
+
+U korenu repozitorijuma:
+
+```bash
+flutter pub get
+```
+
+Mobilna aplikacija (Android emulator ili telefon):
+
+```bash
+cd apps/mobile
+flutter run
+```
+
+Backoffice (Windows ili pregledač):
+
+```bash
+cd apps/backoffice
+flutter run -d windows
+flutter run -d chrome
+```
+
+Podaci su lažni i čuvaju se u memoriji; svaka aplikacija ima svoje podatke.
