@@ -81,21 +81,13 @@ class _AnimalDetail extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          Row(
-            children: [
-              CircleAvatar(radius: 40, child: Icon(Icons.pets, size: 40, color: theme.colorScheme.primary)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(header: true, child: Text(animal.name.text, style: theme.textTheme.headlineMedium)),
-                    const SizedBox(height: 8),
-                    StatusBadge(status: animal.status),
-                  ],
-                ),
-              ),
-            ],
+          AnimalPhoto.banner(animal: animal),
+          const SizedBox(height: 16),
+          Semantics(header: true, child: Text(animal.name.text, style: theme.textTheme.headlineMedium)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: StatusBadge(status: animal.status),
           ),
           const SizedBox(height: 24),
           Card(

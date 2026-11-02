@@ -18,7 +18,7 @@ class AnimalCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(radius: 28, child: Icon(Icons.pets, color: theme.colorScheme.primary)),
+              AnimalPhoto(animal: animal, size: 56),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
