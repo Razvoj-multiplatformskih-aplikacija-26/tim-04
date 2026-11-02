@@ -388,4 +388,90 @@ void main() {
       expect(_location(tester), '/animals?selected=a-01');
     });
   });
+
+  group('intake', () {
+    testWidgets('Ctrl+N opens the form, P1 is checked, and the new animal is saved and selected', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.keyN, control: true);
+      expect(find.text('Prijem nove životinje'), findsOneWidget);
+
+      await tester.tap(find.text('Primi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ime mora imati bar 2 znaka.'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Ime'), 'Mrki');
+      await tester.tap(find.text('Primi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prijem nove životinje'), findsNothing);
+      expect(find.text('Mrki je primljen/a u utočište.'), findsOneWidget);
+      expect(_location(tester), '/animals?selected=a-r-test');
+      expect(_rowOf(tester, 'Mrki').selected, isTrue);
+      expect(_inRow('Mrki', 'Primljena'), findsOneWidget);
+    });
+
+    testWidgets('the "Nova životinja" button opens the same form and "Otkaži" adds nothing', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nova životinja'));
+      await tester.pumpAndSettle();
+      expect(find.text('Prijem nove životinje'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Ime'), 'Mrki');
+      await tester.tap(find.text('Otkaži'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prijem nove životinje'), findsNothing);
+      expect(find.text('Mrki'), findsNothing);
+      expect(_location(tester), '/animals');
+    });
+  });
+
+  group('quarantine', () {
+    testWidgets('"Počni karantin" asks for the end date and moves a received animal into quarantine', (tester) async {
+      await _start(tester, location: '/animals?selected=a-05', size: _tall);
+      await tester.pumpAndSettle();
+      expect(_inRow('Žućko', 'Primljena'), findsOneWidget);
+
+      await tester.tap(find.text('Počni karantin'));
+      await tester.pumpAndSettle();
+      expect(find.text('Karantin za Žućko traje do'), findsOneWidget);
+
+      // The picker's own buttons are in the app's language, so confirm with the last one (OK) instead of its text.
+      await tester.tap(find.descendant(of: find.byType(DatePickerDialog), matching: find.byType(TextButton)).last);
+      await tester.pumpAndSettle();
+
+      // The test clock is 29. 10. 2026, and the picker suggests two weeks later.
+      expect(find.text('Žućko je u karantinu do 12. 11. 2026.'), findsOneWidget);
+      expect(_inRow('Žućko', 'U karantinu'), findsOneWidget);
+      expect(find.text('Završi karantin'), findsOneWidget);
+    });
+
+    testWidgets('"Završi karantin" asks first, then the animal is ready for adoption', (tester) async {
+      await _start(tester, location: '/animals?selected=a-06', size: _tall);
+      await tester.pumpAndSettle();
+      expect(_inRow('Milka', 'U karantinu'), findsOneWidget);
+
+      await tester.tap(find.text('Završi karantin'));
+      await tester.pumpAndSettle();
+      expect(find.text('Završiti karantin za Milka?'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter);
+
+      expect(find.text('Milka je spreman/na za udomljavanje.'), findsOneWidget);
+      expect(_inRow('Milka', 'Spremna za udomljavanje'), findsOneWidget);
+      expect(find.text('Završi karantin'), findsNothing);
+    });
+
+    testWidgets('animals that are ready for adoption have no quarantine button', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Počni karantin'), findsNothing);
+      expect(find.text('Završi karantin'), findsNothing);
+    });
+  });
 }

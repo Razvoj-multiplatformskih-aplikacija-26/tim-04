@@ -6,12 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
 import '../../dependencies.dart';
+import '../../format.dart';
 import '../../shortcuts.dart';
 import 'animal_details.dart';
 import 'animals_filter_bar.dart';
 import 'animals_list.dart';
 import 'animals_table.dart';
 import 'confirm_dialog.dart';
+import 'intake_dialog.dart';
 
 class AnimalsScreen extends StatefulWidget {
   const AnimalsScreen({super.key, this.selectedId});
@@ -59,6 +61,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
       onInvoke: (_) => _approveOldest(),
     ),
     ShowShortcutsIntent: CallbackAction<ShowShortcutsIntent>(onInvoke: (_) => _showShortcuts()),
+    IntakeIntent: GuardedCallbackAction<IntakeIntent>(enabled: () => _canIntake, onInvoke: (_) => _intake()),
   };
   void _move(int offset) {
     final state = _bloc.state;
@@ -119,9 +122,17 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AdoptionRequestBloc, AdoptionRequestState>(
-      listenWhen: (previous, current) => previous is RequestsLoaded && current is RequestsLoaded,
-      listener: _onRequestsChanged,
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AdoptionRequestBloc, AdoptionRequestState>(
+          listenWhen: (previous, current) => previous is RequestsLoaded && current is RequestsLoaded,
+          listener: _onRequestsChanged,
+        ),
+        BlocListener<AnimalsBloc, AnimalsState>(
+          listenWhen: (previous, current) => current is AnimalsLoaded && current.notice != null,
+          listener: _onAnimalsNotice,
+        ),
+      ],
       child: Shortcuts(
         shortcuts: animalsShortcuts(),
         child: Actions(
@@ -148,6 +159,66 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());
   }
 
+  void _onAnimalsNotice(BuildContext context, AnimalsState state) {
+    if (state is! AnimalsLoaded) return;
+    final messenger = ScaffoldMessenger.of(context);
+    switch (state.notice) {
+      case AnimalSaved(:final animal):
+        messenger.showSnackBar(SnackBar(content: Text(_savedMessage(animal))));
+        _select(animal.id);
+      case AnimalRefused(:final error):
+        messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      case AnimalSaveFailed():
+        messenger.showSnackBar(const SnackBar(content: Text('Čuvanje nije uspelo. Pokušaj ponovo.')));
+      case null:
+        return;
+    }
+    _bloc.add(const AnimalsNoticeAcknowledged());
+  }
+
+  /// The saved animal's new status says which action it was.
+  String _savedMessage(Animal animal) {
+    final name = animal.name.text;
+    return switch (animal.status) {
+      Received() => '$name je primljen/a u utočište.',
+      InQuarantine(:final until) => '$name je u karantinu do ${formatDate(until)}',
+      ReadyForAdoption() => '$name je spreman/na za udomljavanje.',
+      _ => 'Sačuvano: $name.',
+    };
+  }
+
+  Future<void> _startQuarantine(Animal animal) async {
+    final now = _dependencies.clock();
+    final until = await pickQuarantineEnd(context, animalName: animal.name.text, now: now);
+    if (until == null || !mounted) return;
+    _bloc.add(QuarantineStarted(animalId: animal.id, by: _dependencies.user, now: now, until: until));
+  }
+
+  Future<void> _endQuarantine(Animal animal) async {
+    final ok = await confirmEndQuarantine(context, animalName: animal.name.text);
+    if (!ok || !mounted) return;
+    _bloc.add(QuarantineEnded(animalId: animal.id, by: _dependencies.user, now: _dependencies.clock()));
+  }
+
+  bool get _canIntake => _bloc.state is AnimalsLoaded || _bloc.state is AnimalsEmpty;
+
+  Future<void> _intake() async {
+    final data = await showIntakeDialog(context, enclosures: _bloc.enclosures, now: _dependencies.clock());
+    if (data == null || !mounted) return;
+    _bloc.add(
+      AnimalIntakeSubmitted(
+        id: AnimalId('a-${_dependencies.newId()}'),
+        by: _dependencies.user,
+        name: data.name,
+        species: data.species,
+        birthDate: data.birthDate,
+        description: data.description,
+        enclosureId: data.enclosureId,
+        now: _dependencies.clock(),
+      ),
+    );
+  }
+
   Widget _content() {
     return BlocBuilder<AnimalsBloc, AnimalsState>(
       builder: (context, state) => LayoutBuilder(
@@ -156,7 +227,22 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
           final selected = state is AnimalsLoaded ? state.selected : null;
           if (!wide && selected != null) return _detailsPage(selected);
           return Scaffold(
-            appBar: AppBar(title: const Text('Životinje'), actions: [..._simulateFailure(), const SizedBox(width: 8)]),
+            appBar: AppBar(
+              title: const Text('Životinje'),
+              actions: [
+                ..._simulateFailure(),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: '$commandKeyLabel N',
+                  child: FilledButton.tonalIcon(
+                    onPressed: _canIntake ? _intake : null,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nova životinja'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -236,6 +322,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
         nameOf: _dependencies.nameOf,
         onApprove: (request) => _approve(animal, request, requests is RequestsLoaded ? requests.requests : const []),
         onReject: _reject,
+        onStartQuarantine: () => _startQuarantine(animal),
+        onEndQuarantine: () => _endQuarantine(animal),
       ),
     );
   }

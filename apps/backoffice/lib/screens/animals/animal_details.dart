@@ -14,6 +14,8 @@ class AnimalDetails extends StatelessWidget {
     required this.nameOf,
     required this.onApprove,
     required this.onReject,
+    required this.onStartQuarantine,
+    required this.onEndQuarantine,
   });
 
   final Animal animal;
@@ -23,6 +25,8 @@ class AnimalDetails extends StatelessWidget {
   final String Function(UserId) nameOf;
   final ValueChanged<AdoptionRequest> onApprove;
   final ValueChanged<AdoptionRequest> onReject;
+  final VoidCallback onStartQuarantine;
+  final VoidCallback onEndQuarantine;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +58,7 @@ class AnimalDetails extends StatelessWidget {
         _Fact(icon: Icons.info_outline, text: _statusDetail(animal.status)),
         _Fact(icon: Icons.home_outlined, text: 'U utočištu od ${formatDate(animal.receivedAt)}'),
         _Fact(icon: Icons.cake_outlined, text: 'Rođena ${formatDate(animal.birthDate)}'),
+        ..._statusAction(),
         const SizedBox(height: 20),
         Text('Opis', style: theme.textTheme.titleMedium),
         const SizedBox(height: 6),
@@ -62,6 +67,23 @@ class AnimalDetails extends StatelessWidget {
         ..._requestsSection(context),
       ],
     );
+  }
+
+  /// The next step in the animal's life that staff can take from here: into quarantine, or out of it.
+  List<Widget> _statusAction() {
+    final (label, icon, onPressed) = switch (animal.status) {
+      Received() || Returned() => ('Počni karantin', Icons.medical_services_outlined, onStartQuarantine),
+      InQuarantine() => ('Završi karantin', Icons.check_circle_outline, onEndQuarantine),
+      _ => (null, null, null),
+    };
+    if (label == null) return const [];
+    return [
+      const SizedBox(height: 12),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: FilledButton.tonalIcon(onPressed: onPressed, icon: Icon(icon), label: Text(label)),
+      ),
+    ];
   }
 
   List<Widget> _requestsSection(BuildContext context) {
