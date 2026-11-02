@@ -50,6 +50,7 @@ class _BackofficeAppState extends State<BackofficeApp> {
         ],
         child: MaterialApp.router(
           title: 'Utočište — Backoffice',
+          debugShowCheckedModeBanner: false,
           theme: UtocisteTheme.light(),
           darkTheme: UtocisteTheme.dark(),
           locale: BackofficeApp.locale,

@@ -33,39 +33,43 @@ class AnimalDetails extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
 
-    return ListView(
+    // Not a lazy ListView: every button must exist so ↑/↓ can reach the ones further down.
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-      children: [
-        AnimalPhoto.banner(animal: animal),
-        const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: Text(animal.name.text, style: theme.textTheme.headlineMedium)),
-            const SizedBox(width: 12),
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: StatusBadge(status: animal.status),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${animal.species.label} · ${formatAge(animal.ageInMonths(now))} · prostor ${animal.enclosureId.value}',
-          style: muted,
-        ),
-        const SizedBox(height: 16),
-        _Fact(icon: Icons.info_outline, text: _statusDetail(animal.status)),
-        _Fact(icon: Icons.home_outlined, text: 'U utočištu od ${formatDate(animal.receivedAt)}'),
-        _Fact(icon: Icons.cake_outlined, text: 'Rođena ${formatDate(animal.birthDate)}'),
-        ..._statusAction(),
-        const SizedBox(height: 20),
-        Text('Opis', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 6),
-        Text(animal.description, style: theme.textTheme.bodyMedium),
-        const SizedBox(height: 24),
-        ..._requestsSection(context),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AnimalPhoto.banner(animal: animal),
+          const SizedBox(height: 20),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Text(animal.name.text, style: theme.textTheme.headlineMedium)),
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: StatusBadge(status: animal.status),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${animal.species.label} · ${formatAge(animal.ageInMonths(now))} · prostor ${animal.enclosureId.value}',
+            style: muted,
+          ),
+          const SizedBox(height: 16),
+          _Fact(icon: Icons.info_outline, text: _statusDetail(animal.status)),
+          _Fact(icon: Icons.home_outlined, text: 'U utočištu od ${formatDate(animal.receivedAt)}'),
+          _Fact(icon: Icons.cake_outlined, text: 'Rođena ${formatDate(animal.birthDate)}'),
+          ..._statusAction(),
+          const SizedBox(height: 20),
+          Text('Opis', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 6),
+          Text(animal.description, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          ..._requestsSection(context),
+        ],
+      ),
     );
   }
 

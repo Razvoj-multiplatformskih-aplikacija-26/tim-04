@@ -44,6 +44,13 @@ void main() {
     expect(find.text('Spremna za udomljavanje'), findsOneWidget);
   });
 
+  testWidgets('StatusBadge can show the short label', (tester) async {
+    await tester.pumpWidget(_wrap(StatusBadge(status: ReadyForAdoption(since: DateTime(2026, 8, 20)), short: true)));
+
+    expect(find.text('Spremna'), findsOneWidget);
+    expect(find.text('Spremna za udomljavanje'), findsNothing);
+  });
+
   testWidgets('RequestStatusChip shows the request status label', (tester) async {
     await tester.pumpWidget(_wrap(const RequestStatusChip(status: AdoptionRequestStatus.withdrawn)));
 

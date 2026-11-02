@@ -5,9 +5,12 @@ import '../text/serbian.dart';
 
 /// Pastel pill with the animal's status. The pastels read well on both the light and the dark theme.
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({super.key, required this.status});
+  const StatusBadge({super.key, required this.status, this.short = false});
 
   final AnimalStatus status;
+
+  /// Shows [AnimalStatusLabel.shortLabel] ("Spremna") instead of the full label, for table cells.
+  final bool short;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +28,10 @@ class StatusBadge extends StatelessWidget {
       curve: Curves.easeOut,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
-      child: Text(status.label, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: foreground)),
+      child: Text(
+        short ? status.shortLabel : status.label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: foreground),
+      ),
     );
   }
 }

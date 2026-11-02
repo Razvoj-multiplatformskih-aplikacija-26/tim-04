@@ -83,7 +83,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Rex'), findsOneWidget);
-      expect(find.text('Spremna za udomljavanje'), findsWidgets);
+      expect(find.text('Spremna'), findsWidgets);
     });
 
     testWidgets('shows an error with a retry button when loading fails', (tester) async {
@@ -175,6 +175,21 @@ void main() {
       expect(find.text('Ana Petrović'), findsNothing);
     });
 
+    testWidgets('the "Zahtevi" column counts the pending requests and drops to zero after approval', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      expect(find.text('ZAHTEVI'), findsOneWidget);
+      expect(_inRow('Rex', '3'), findsOneWidget);
+      expect(_inRow('Bobi', '—'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter, control: true);
+      await _press(tester, LogicalKeyboardKey.enter);
+
+      expect(_inRow('Rex', '3'), findsNothing);
+      expect(_inRow('Rex', '—'), findsOneWidget);
+    });
+
     testWidgets('opening a link with ?selected= selects that animal', (tester) async {
       await _start(tester, location: '/animals?selected=a-02');
       await tester.pumpAndSettle();
@@ -198,7 +213,7 @@ void main() {
       await _start(tester, location: '/animals?selected=a-01');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Zatvori detalje'));
+      await tester.tap(find.byTooltip('Zatvori detalje (Esc)'));
       await tester.pumpAndSettle();
 
       expect(find.text(_rexDescription), findsNothing);
@@ -350,6 +365,54 @@ void main() {
       expect(find.byType(AlertDialog), findsNothing);
     });
 
+    testWidgets('→ moves the focus into the details panel, where ↑/↓ go from button to button', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      bool insidePanel() {
+        final focused = FocusManager.instance.primaryFocus?.context;
+        return focused != null &&
+            find.byType(AnimalDetails).evaluate().any((panel) {
+              var inside = false;
+              focused.visitAncestorElements((ancestor) => !(inside = ancestor == panel));
+              return inside;
+            });
+      }
+
+      expect(insidePanel(), isFalse);
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+      expect(insidePanel(), isTrue);
+
+      // ↓ moves inside the panel; the selected animal stays the same.
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(insidePanel(), isTrue);
+      expect(_location(tester), '/animals?selected=a-01');
+
+      // Enter presses the focused request button, which opens its confirmation dialog.
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // ← goes back to the table, and ↓ moves the selection again.
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      expect(insidePanel(), isFalse);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-02');
+    });
+
+    testWidgets('Esc inside the panel closes it and the arrows work on the table again', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(_location(tester), '/animals');
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-01');
+    });
+
     testWidgets('F1 lists the shortcuts and Esc closes the list', (tester) async {
       await _start(tester);
       await tester.pumpAndSettle();
@@ -462,7 +525,7 @@ void main() {
       await _press(tester, LogicalKeyboardKey.enter);
 
       expect(find.text('Milka je spreman/na za udomljavanje.'), findsOneWidget);
-      expect(_inRow('Milka', 'Spremna za udomljavanje'), findsOneWidget);
+      expect(_inRow('Milka', 'Spremna'), findsOneWidget);
       expect(find.text('Završi karantin'), findsNothing);
     });
 

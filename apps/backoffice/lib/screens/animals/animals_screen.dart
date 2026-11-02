@@ -34,6 +34,12 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   late final AnimalsBloc _bloc = context.read<AnimalsBloc>();
   late final BackofficeDependencies _dependencies = context.read<BackofficeDependencies>();
 
+  /// The whole screen (table and filters): the arrows and the other shortcuts work while the focus is here.
+  final _screenFocus = FocusNode(debugLabel: 'Animals screen');
+
+  /// The details panel: → moves the focus in, and Tab or ↑/↓ then stay inside until ← or Esc.
+  final _detailsFocus = FocusScopeNode(debugLabel: 'Animal details');
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +52,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     if (oldWidget.selectedId != widget.selectedId) _bloc.add(AnimalSelected(widget.selectedId));
   }
 
+  @override
+  void dispose() {
+    _screenFocus.dispose();
+    _detailsFocus.dispose();
+    super.dispose();
+  }
+
   void _select(AnimalId? id) => context.go(AnimalsScreen.pathFor(id));
 
   void _toggle(AnimalId id) => _select(id == widget.selectedId ? null : id);
@@ -54,7 +67,19 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     MoveSelectionIntent: CallbackAction<MoveSelectionIntent>(onInvoke: (intent) => _move(intent.offset)),
     ClearSelectionIntent: GuardedCallbackAction<ClearSelectionIntent>(
       enabled: () => widget.selectedId != null,
-      onInvoke: (_) => _select(null),
+      onInvoke: (_) {
+        _screenFocus.requestFocus();
+        _select(null);
+        return null;
+      },
+    ),
+    FocusDetailsIntent: GuardedCallbackAction<FocusDetailsIntent>(
+      enabled: () => widget.selectedId != null && !_detailsFocus.hasFocus,
+      onInvoke: (_) => _focusDetails(),
+    ),
+    FocusTableIntent: GuardedCallbackAction<FocusTableIntent>(
+      enabled: () => _detailsFocus.hasFocus,
+      onInvoke: (_) => _screenFocus.requestFocus(),
     ),
     ApproveIntent: GuardedCallbackAction<ApproveIntent>(
       enabled: () => _oldestPending() != null,
@@ -63,6 +88,17 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     ShowShortcutsIntent: CallbackAction<ShowShortcutsIntent>(onInvoke: (_) => _showShortcuts()),
     IntakeIntent: GuardedCallbackAction<IntakeIntent>(enabled: () => _canIntake, onInvoke: (_) => _intake()),
   };
+
+  /// Focuses the button used last time in the panel, or the first one.
+  void _focusDetails() {
+    final previous = _detailsFocus.focusedChild;
+    if (previous != null) {
+      previous.requestFocus();
+    } else {
+      _detailsFocus.nextFocus();
+    }
+  }
+
   void _move(int offset) {
     final state = _bloc.state;
     if (state is! AnimalsLoaded) return;
@@ -137,7 +173,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
         shortcuts: animalsShortcuts(),
         child: Actions(
           actions: _actions(),
-          child: Focus(autofocus: true, child: _content()),
+          child: Focus(focusNode: _screenFocus, autofocus: true, child: _content()),
         ),
       ),
     );
@@ -272,27 +308,51 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: AnimalsTable(animals: animals, selectedId: selectedId, now: now, onSelect: _toggle),
+              child: BlocBuilder<AdoptionRequestBloc, AdoptionRequestState>(
+                builder: (context, requests) => AnimalsTable(
+                  animals: animals,
+                  selectedId: selectedId,
+                  now: now,
+                  onSelect: _toggle,
+                  pendingRequests: _pendingByAnimal(requests),
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             SizedBox(
               width: 380,
-              child: Card(
+              // The panel gets a leaf-green outline while the keyboard focus is inside it.
+              child: ListenableBuilder(
+                listenable: _detailsFocus,
+                builder: (context, child) => Card(
+                  shape: _detailsFocus.hasFocus
+                      ? RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+                        )
+                      : null,
+                  child: child,
+                ),
                 child: selected == null
                     ? const EmptyView(message: 'Izaberite životinju iz tabele da vidite detalje.')
-                    : Stack(
-                        children: [
-                          _details(selected),
-                          Positioned(
-                            top: 28,
-                            right: 28,
-                            child: IconButton.filledTonal(
-                              tooltip: 'Zatvori detalje',
-                              onPressed: () => _select(null),
-                              icon: const Icon(Icons.close),
+                    : _detailsScope(
+                        Stack(
+                          children: [
+                            _details(selected),
+                            Positioned(
+                              top: 28,
+                              right: 28,
+                              // Esc closes the panel from the keyboard, so Tab and ↑/↓ skip this button.
+                              child: ExcludeFocus(
+                                child: IconButton.filledTonal(
+                                  tooltip: 'Zatvori detalje (Esc)',
+                                  onPressed: () => _select(null),
+                                  icon: const Icon(Icons.close),
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
               ),
             ),
@@ -303,13 +363,32 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     };
   }
 
+  /// Counts the pending requests per animal for the table's "Zahtevi" column; empty until the requests load.
+  Map<AnimalId, int> _pendingByAnimal(AdoptionRequestState requests) {
+    if (requests is! RequestsLoaded) return const {};
+    final counts = <AnimalId, int>{};
+    for (final request in requests.requests) {
+      if (request.status == AdoptionRequestStatus.pending) {
+        counts[request.animalId] = (counts[request.animalId] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
   Widget _detailsPage(Animal animal) {
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(onPressed: () => _select(null)),
         title: Text(animal.name.text),
       ),
-      body: _details(animal),
+      body: _detailsScope(_details(animal)),
+    );
+  }
+
+  Widget _detailsScope(Widget child) {
+    return FocusScope(
+      node: _detailsFocus,
+      child: Shortcuts(shortcuts: detailsShortcuts(), child: child),
     );
   }
 
