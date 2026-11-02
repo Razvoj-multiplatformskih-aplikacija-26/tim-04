@@ -21,7 +21,7 @@ final class BackofficeDependencies {
       repository: fake,
       user: coordinator,
       clock: DateTime.now,
-      newId: () => 'r-new-${++nextId}',
+      newId: () => 'new-${++nextId}',
       users: seedUsers,
       fakeRepository: fake,
     );

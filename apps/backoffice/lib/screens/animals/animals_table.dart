@@ -12,12 +12,16 @@ class AnimalsTable extends StatelessWidget {
     required this.selectedId,
     required this.now,
     required this.onSelect,
+    this.pendingRequests = const {},
   });
 
   final List<Animal> animals;
   final AnimalId? selectedId;
   final DateTime now;
   final ValueChanged<AnimalId> onSelect;
+
+  /// How many requests are waiting for each animal; animals without any are left out.
+  final Map<AnimalId, int> pendingRequests;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +45,7 @@ class AnimalsTable extends StatelessWidget {
                       now: now,
                       compact: compact,
                       selected: animal.id == selectedId,
+                      pendingRequests: pendingRequests[animal.id] ?? 0,
                       onTap: () => onSelect(animal.id),
                     );
                   },
@@ -59,6 +64,7 @@ const _species = 2;
 const _age = 3;
 const _enclosure = 2;
 const _status = 4;
+const _requests = 2;
 const _received = 3;
 
 class _HeaderRow extends StatelessWidget {
@@ -83,6 +89,7 @@ class _HeaderRow extends StatelessWidget {
           if (!compact) cell(_age, 'STAROST'),
           cell(_enclosure, 'PROSTOR'),
           cell(_status, 'STATUS'),
+          if (!compact) cell(_requests, 'ZAHTEVI'),
           if (!compact) cell(_received, 'PRIMLJENA'),
         ],
       ),
@@ -99,6 +106,7 @@ class AnimalsTableRow extends StatefulWidget {
     required this.compact,
     required this.selected,
     required this.onTap,
+    this.pendingRequests = 0,
   });
 
   final Animal animal;
@@ -106,6 +114,7 @@ class AnimalsTableRow extends StatefulWidget {
   final bool compact;
   final bool selected;
   final VoidCallback onTap;
+  final int pendingRequests;
 
   @override
   State<AnimalsTableRow> createState() => _AnimalsTableRowState();
@@ -189,13 +198,41 @@ class _AnimalsTableRowState extends State<AnimalsTableRow> {
                   _status,
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: StatusBadge(status: animal.status),
+                    child: StatusBadge(status: animal.status, short: true),
                   ),
                 ),
+                if (!compact) cell(_requests, _PendingCount(count: widget.pendingRequests)),
                 if (!compact) cell(_received, text(formatDate(animal.receivedAt))),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The number of requests waiting for a decision, as a small rose pill; a dash when there are none.
+class _PendingCount extends StatelessWidget {
+  const _PendingCount({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    if (count == 0) {
+      return Text('—', style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant));
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Tooltip(
+        message: 'Zahteva na čekanju: $count',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          decoration: BoxDecoration(color: scheme.tertiaryContainer, borderRadius: BorderRadius.circular(999)),
+          child: Text('$count', style: theme.textTheme.labelMedium?.copyWith(color: scheme.onTertiaryContainer)),
         ),
       ),
     );

@@ -83,7 +83,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Rex'), findsOneWidget);
-      expect(find.text('Spremna za udomljavanje'), findsWidgets);
+      expect(find.text('Spremna'), findsWidgets);
     });
 
     testWidgets('shows an error with a retry button when loading fails', (tester) async {
@@ -175,6 +175,21 @@ void main() {
       expect(find.text('Ana Petrović'), findsNothing);
     });
 
+    testWidgets('the "Zahtevi" column counts the pending requests and drops to zero after approval', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      expect(find.text('ZAHTEVI'), findsOneWidget);
+      expect(_inRow('Rex', '3'), findsOneWidget);
+      expect(_inRow('Bobi', '—'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter, control: true);
+      await _press(tester, LogicalKeyboardKey.enter);
+
+      expect(_inRow('Rex', '3'), findsNothing);
+      expect(_inRow('Rex', '—'), findsOneWidget);
+    });
+
     testWidgets('opening a link with ?selected= selects that animal', (tester) async {
       await _start(tester, location: '/animals?selected=a-02');
       await tester.pumpAndSettle();
@@ -198,7 +213,7 @@ void main() {
       await _start(tester, location: '/animals?selected=a-01');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Zatvori detalje'));
+      await tester.tap(find.byTooltip('Zatvori detalje (Esc)'));
       await tester.pumpAndSettle();
 
       expect(find.text(_rexDescription), findsNothing);
@@ -350,6 +365,54 @@ void main() {
       expect(find.byType(AlertDialog), findsNothing);
     });
 
+    testWidgets('→ moves the focus into the details panel, where ↑/↓ go from button to button', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      bool insidePanel() {
+        final focused = FocusManager.instance.primaryFocus?.context;
+        return focused != null &&
+            find.byType(AnimalDetails).evaluate().any((panel) {
+              var inside = false;
+              focused.visitAncestorElements((ancestor) => !(inside = ancestor == panel));
+              return inside;
+            });
+      }
+
+      expect(insidePanel(), isFalse);
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+      expect(insidePanel(), isTrue);
+
+      // ↓ moves inside the panel; the selected animal stays the same.
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(insidePanel(), isTrue);
+      expect(_location(tester), '/animals?selected=a-01');
+
+      // Enter presses the focused request button, which opens its confirmation dialog.
+      await _press(tester, LogicalKeyboardKey.enter);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // ← goes back to the table, and ↓ moves the selection again.
+      await _press(tester, LogicalKeyboardKey.arrowLeft);
+      expect(insidePanel(), isFalse);
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-02');
+    });
+
+    testWidgets('Esc inside the panel closes it and the arrows work on the table again', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.arrowRight);
+      await _press(tester, LogicalKeyboardKey.escape);
+      expect(_location(tester), '/animals');
+
+      await _press(tester, LogicalKeyboardKey.arrowDown);
+      expect(_location(tester), '/animals?selected=a-01');
+    });
+
     testWidgets('F1 lists the shortcuts and Esc closes the list', (tester) async {
       await _start(tester);
       await tester.pumpAndSettle();
@@ -386,6 +449,92 @@ void main() {
 
       await _press(tester, LogicalKeyboardKey.enter);
       expect(_location(tester), '/animals?selected=a-01');
+    });
+  });
+
+  group('intake', () {
+    testWidgets('Ctrl+N opens the form, P1 is checked, and the new animal is saved and selected', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.keyN, control: true);
+      expect(find.text('Prijem nove životinje'), findsOneWidget);
+
+      await tester.tap(find.text('Primi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ime mora imati bar 2 znaka.'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Ime'), 'Mrki');
+      await tester.tap(find.text('Primi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prijem nove životinje'), findsNothing);
+      expect(find.text('Mrki je primljen/a u utočište.'), findsOneWidget);
+      expect(_location(tester), '/animals?selected=a-r-test');
+      expect(_rowOf(tester, 'Mrki').selected, isTrue);
+      expect(_inRow('Mrki', 'Primljena'), findsOneWidget);
+    });
+
+    testWidgets('the "Nova životinja" button opens the same form and "Otkaži" adds nothing', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nova životinja'));
+      await tester.pumpAndSettle();
+      expect(find.text('Prijem nove životinje'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'Ime'), 'Mrki');
+      await tester.tap(find.text('Otkaži'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prijem nove životinje'), findsNothing);
+      expect(find.text('Mrki'), findsNothing);
+      expect(_location(tester), '/animals');
+    });
+  });
+
+  group('quarantine', () {
+    testWidgets('"Počni karantin" asks for the end date and moves a received animal into quarantine', (tester) async {
+      await _start(tester, location: '/animals?selected=a-05', size: _tall);
+      await tester.pumpAndSettle();
+      expect(_inRow('Žućko', 'Primljena'), findsOneWidget);
+
+      await tester.tap(find.text('Počni karantin'));
+      await tester.pumpAndSettle();
+      expect(find.text('Karantin za Žućko traje do'), findsOneWidget);
+
+      // The picker's own buttons are in the app's language, so confirm with the last one (OK) instead of its text.
+      await tester.tap(find.descendant(of: find.byType(DatePickerDialog), matching: find.byType(TextButton)).last);
+      await tester.pumpAndSettle();
+
+      // The test clock is 29. 10. 2026, and the picker suggests two weeks later.
+      expect(find.text('Žućko je u karantinu do 12. 11. 2026.'), findsOneWidget);
+      expect(_inRow('Žućko', 'U karantinu'), findsOneWidget);
+      expect(find.text('Završi karantin'), findsOneWidget);
+    });
+
+    testWidgets('"Završi karantin" asks first, then the animal is ready for adoption', (tester) async {
+      await _start(tester, location: '/animals?selected=a-06', size: _tall);
+      await tester.pumpAndSettle();
+      expect(_inRow('Milka', 'U karantinu'), findsOneWidget);
+
+      await tester.tap(find.text('Završi karantin'));
+      await tester.pumpAndSettle();
+      expect(find.text('Završiti karantin za Milka?'), findsOneWidget);
+
+      await _press(tester, LogicalKeyboardKey.enter);
+
+      expect(find.text('Milka je spreman/na za udomljavanje.'), findsOneWidget);
+      expect(_inRow('Milka', 'Spremna'), findsOneWidget);
+      expect(find.text('Završi karantin'), findsNothing);
+    });
+
+    testWidgets('animals that are ready for adoption have no quarantine button', (tester) async {
+      await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Počni karantin'), findsNothing);
+      expect(find.text('Završi karantin'), findsNothing);
     });
   });
 }

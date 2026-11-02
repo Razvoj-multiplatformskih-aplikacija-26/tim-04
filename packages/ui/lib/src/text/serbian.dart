@@ -37,6 +37,12 @@ extension AnimalStatusLabel on AnimalStatus {
     PermanentResident() => 'Stalni stanar',
     Returned() => 'Vraćena',
   };
+
+  /// One or two words for tight places such as a table cell.
+  String get shortLabel => switch (this) {
+    ReadyForAdoption() => 'Spremna',
+    _ => label,
+  };
 }
 
 extension SpeciesLabel on Species {

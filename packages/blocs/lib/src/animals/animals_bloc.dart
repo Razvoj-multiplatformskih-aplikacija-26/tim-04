@@ -23,6 +23,20 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
       _selectedId = event.id;
       if (state is AnimalsLoaded) _show(emit);
     });
+    on<AnimalIntakeSubmitted>((event, emit) => _intake(event, emit));
+    on<QuarantineStarted>(
+      (event, emit) => _change(event.animalId, emit, (animal) {
+        return startQuarantine(animal: animal, by: event.by, now: event.now, until: event.until);
+      }),
+    );
+    on<QuarantineEnded>(
+      (event, emit) => _change(event.animalId, emit, (animal) {
+        return endQuarantine(animal: animal, by: event.by, now: event.now);
+      }),
+    );
+    on<AnimalsNoticeAcknowledged>((event, emit) {
+      if (state case AnimalsLoaded(notice: _?)) _show(emit);
+    });
   }
 
   final ShelterRepository repository;
@@ -36,6 +50,12 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
       if (animal.id == id) return animal;
     }
     return null;
+  }
+
+  /// Every enclosure in use, sorted, for the intake form.
+  List<EnclosureId> get enclosures {
+    final ids = {for (final animal in _all) animal.enclosureId.value}.toList()..sort();
+    return [for (final id in ids) EnclosureId(id)];
   }
 
   Future<void> _load(Emitter<AnimalsState> emit) async {
@@ -57,7 +77,50 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
     }
   }
 
-  void _show(Emitter<AnimalsState> emit) {
+  Future<void> _intake(AnimalIntakeSubmitted event, Emitter<AnimalsState> emit) async {
+    final result = intakeAnimal(
+      id: event.id,
+      by: event.by,
+      name: event.name,
+      species: event.species,
+      birthDate: event.birthDate,
+      description: event.description,
+      enclosureId: event.enclosureId,
+      now: event.now,
+    );
+    // Show every animal so the new one (Received) is not hidden by the current filter.
+    if (result is Success) _filter = AnimalsFilter.all;
+    await _save(result, emit);
+  }
+
+  /// Applies a domain transition (e.g. [startQuarantine]) to the animal with [id] and saves the result.
+  Future<void> _change(
+    AnimalId id,
+    Emitter<AnimalsState> emit,
+    Result<Animal> Function(Animal animal) transition,
+  ) async {
+    final animal = animalById(id);
+    if (animal == null) return;
+    await _save(transition(animal), emit);
+  }
+
+  /// A refused rule becomes [AnimalRefused]; otherwise the animal is saved, the list reloaded, and [AnimalSaved] shown.
+  Future<void> _save(Result<Animal> result, Emitter<AnimalsState> emit) async {
+    switch (result) {
+      case Failure(:final error):
+        _show(emit, notice: AnimalRefused(error));
+      case Success(value: final animal):
+        try {
+          await repository.saveAnimal(animal);
+          _all = await repository.animals();
+          _show(emit, notice: AnimalSaved(animal));
+        } catch (error) {
+          _show(emit, notice: AnimalSaveFailed(error));
+        }
+    }
+  }
+
+  void _show(Emitter<AnimalsState> emit, {AnimalsNotice? notice}) {
     final visible = [
       for (final animal in _all)
         if (_filter.matches(animal)) animal,
@@ -65,7 +128,7 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
     if (visible.isEmpty) {
       emit(AnimalsEmpty(_filter));
     } else {
-      emit(AnimalsLoaded(animals: visible, filter: _filter, selectedId: _selectedId));
+      emit(AnimalsLoaded(animals: visible, filter: _filter, selectedId: _selectedId, notice: notice));
     }
   }
 }
