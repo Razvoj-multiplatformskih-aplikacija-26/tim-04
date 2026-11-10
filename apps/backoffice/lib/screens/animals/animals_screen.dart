@@ -212,7 +212,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     _bloc.add(const AnimalsNoticeAcknowledged());
   }
 
-  /// The saved animal's new status says which action it was.
   String _savedMessage(Animal animal) {
     final name = animal.name.text;
     return switch (animal.status) {
@@ -224,33 +223,31 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   }
 
   Future<void> _startQuarantine(Animal animal) async {
-    final now = _dependencies.clock();
+    final now = _dependencies.clock.now();
     final until = await pickQuarantineEnd(context, animalName: animal.name.text, now: now);
     if (until == null || !mounted) return;
-    _bloc.add(QuarantineStarted(animalId: animal.id, by: _dependencies.user, now: now, until: until));
+    _bloc.add(QuarantineStarted(animalId: animal.id, by: _dependencies.user, until: until));
   }
 
   Future<void> _endQuarantine(Animal animal) async {
     final ok = await confirmEndQuarantine(context, animalName: animal.name.text);
     if (!ok || !mounted) return;
-    _bloc.add(QuarantineEnded(animalId: animal.id, by: _dependencies.user, now: _dependencies.clock()));
+    _bloc.add(QuarantineEnded(animalId: animal.id, by: _dependencies.user));
   }
 
   bool get _canIntake => _bloc.state is AnimalsLoaded || _bloc.state is AnimalsEmpty;
 
   Future<void> _intake() async {
-    final data = await showIntakeDialog(context, enclosures: _bloc.enclosures, now: _dependencies.clock());
+    final data = await showIntakeDialog(context, enclosures: _bloc.enclosures, now: _dependencies.clock.now());
     if (data == null || !mounted) return;
     _bloc.add(
       AnimalIntakeSubmitted(
-        id: AnimalId('a-${_dependencies.newId()}'),
         by: _dependencies.user,
         name: data.name,
         species: data.species,
         birthDate: data.birthDate,
         description: data.description,
         enclosureId: data.enclosureId,
-        now: _dependencies.clock(),
       ),
     );
   }
@@ -297,7 +294,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   }
 
   Widget _body(AnimalsState state, {required bool wide}) {
-    final now = _dependencies.clock();
+    final now = _dependencies.clock.now();
     return switch (state) {
       AnimalsLoading() => const LoadingView(),
       AnimalsFailure() => FailureView(onRetry: () => _bloc.add(const AnimalsRetried())),
@@ -397,7 +394,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
       builder: (context, requests) => AnimalDetails(
         animal: animal,
         requests: requests,
-        now: _dependencies.clock(),
+        now: _dependencies.clock.now(),
         nameOf: _dependencies.nameOf,
         onApprove: (request) => _approve(animal, request, requests is RequestsLoaded ? requests.requests : const []),
         onReject: _reject,

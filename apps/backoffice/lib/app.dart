@@ -38,12 +38,19 @@ class _BackofficeAppState extends State<BackofficeApp> {
       value: dependencies,
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => AnimalsBloc(repository: dependencies.repository)..add(const AnimalsRequested())),
+          BlocProvider(
+            create: (_) => AnimalsBloc(
+              getAnimals: dependencies.getAnimals,
+              intakeAnimal: dependencies.intakeAnimal,
+              startQuarantine: dependencies.startQuarantine,
+              endQuarantine: dependencies.endQuarantine,
+            )..add(const AnimalsRequested()),
+          ),
           BlocProvider(
             create: (_) => AdoptionRequestBloc(
               repository: dependencies.repository,
               user: dependencies.user,
-              clock: dependencies.clock,
+              clock: dependencies.clock.now,
               newId: dependencies.newId,
             )..add(const MyRequestsRequested()),
           ),

@@ -4,16 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
+import 'package:use_cases/use_cases.dart';
 
 import 'data/seed.dart';
 import 'router.dart';
 
 class UtocisteApp extends StatefulWidget {
-  const UtocisteApp({super.key, required this.repository});
+  const UtocisteApp({super.key, required this.repository, required this.animals});
 
   static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn');
 
   final ShelterRepository repository;
+  final AnimalRepository animals;
 
   @override
   State<UtocisteApp> createState() => _UtocisteAppState();
@@ -24,6 +26,10 @@ class _UtocisteAppState extends State<UtocisteApp> {
   int _nextRequestNumber = 1;
 
   String _newRequestId() => 'r-m${_nextRequestNumber++}';
+
+  int _nextAnimalNumber = 1;
+
+  String _newAnimalId() => 'a-m${_nextAnimalNumber++}';
 
   @override
   void dispose() {
@@ -39,9 +45,13 @@ class _UtocisteAppState extends State<UtocisteApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) =>
-                AnimalsBloc(repository: repository, initialFilter: AnimalsFilter.readyForAdoption)
-                  ..add(const AnimalsRequested()),
+            create: (_) => AnimalsBloc(
+              getAnimals: GetAnimals(animals: widget.animals),
+              intakeAnimal: IntakeAnimal(animals: widget.animals, clock: const SystemClock(), newId: _newAnimalId),
+              startQuarantine: StartQuarantine(animals: widget.animals, clock: const SystemClock()),
+              endQuarantine: EndQuarantine(animals: widget.animals, clock: const SystemClock()),
+              initialFilter: AnimalsFilter.readyForAdoption,
+            )..add(const AnimalsRequested()),
           ),
           BlocProvider(
             create: (_) => AdoptionRequestBloc(
