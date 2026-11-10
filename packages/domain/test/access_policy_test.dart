@@ -93,6 +93,23 @@ void main() {
       });
     });
 
+    group('canViewRequest', () {
+      test('the applicant can see their own request', () {
+        expect(AccessPolicy.canViewRequest(ana, anasRequest), isTrue);
+      });
+
+      test('another adopter cannot see it', () {
+        expect(AccessPolicy.canViewRequest(marko, anasRequest), isFalse);
+      });
+
+      test('staff can see every request', () {
+        expect(AccessPolicy.canViewRequest(volunteer, anasRequest), isTrue);
+        expect(AccessPolicy.canViewRequest(senior, anasRequest), isTrue);
+        expect(AccessPolicy.canViewRequest(vet, anasRequest), isTrue);
+        expect(AccessPolicy.canViewRequest(coordinator, anasRequest), isTrue);
+      });
+    });
+
     group('canUseMobileApp', () {
       test('an adopter can use the mobile app', () {
         expect(AccessPolicy.canUseMobileApp(ana), isTrue);

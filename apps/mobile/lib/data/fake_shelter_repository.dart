@@ -4,7 +4,7 @@ import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
 
-final class FakeShelterRepository implements ShelterRepository {
+final class FakeShelterRepository implements ShelterRepository, AdoptionRequestRepository {
   FakeShelterRepository({
     this.latency = const Duration(milliseconds: 600),
     List<Animal>? animals,
@@ -79,5 +79,46 @@ final class FakeShelterRepository implements ShelterRepository {
     } else {
       _animals[index] = animal;
     }
+  }
+
+  @override
+  Future<AdoptionRequest?> find(AdoptionRequestId id) async {
+    await _roundTrip();
+    return _requests.where((r) => r.id == id).firstOrNull;
+  }
+
+  @override
+  Future<Result<AdoptionRequest>> submit(AdoptionRequest request) async {
+    await _roundTrip();
+    _requests.add(request);
+    return Success(request);
+  }
+
+  @override
+  Future<Result<AdoptionRequest>> save(AdoptionRequest request, {required AdoptionRequestStatus from}) async {
+    await _roundTrip();
+    final index = _requests.indexWhere((r) => r.id == request.id);
+    if (index == -1) return const Failure(NotFound());
+    if (_requests[index].status != from) return const Failure(InvalidRequestTransition());
+    _requests[index] = request;
+    return Success(request);
+  }
+
+  @override
+  Future<Result<ApprovalOutcome>> approve(ApprovalOutcome outcome) async {
+    await _roundTrip();
+    final animalIndex = _animals.indexWhere((a) => a.id == outcome.animal.id);
+    final requestIndex = _requests.indexWhere((r) => r.id == outcome.approved.id);
+    if (animalIndex == -1 ||
+        requestIndex == -1 ||
+        _animals[animalIndex].status is! ReadyForAdoption ||
+        _requests[requestIndex].status != AdoptionRequestStatus.pending) {
+      return const Failure(InvalidRequestTransition());
+    }
+    _animals[animalIndex] = outcome.animal;
+    for (final changed in [outcome.approved, ...outcome.rejected]) {
+      _requests[_requests.indexWhere((r) => r.id == changed.id)] = changed;
+    }
+    return Success(outcome);
   }
 }
