@@ -21,6 +21,8 @@ dependencies:
   intl: 0.20.3
   ui:
     path: ../../packages/ui
+  use_cases:
+    path: ../../packages/use_cases
 
 dev_dependencies:
   flutter_test:
