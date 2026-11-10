@@ -17,6 +17,7 @@ const _narrow = Size(600, 900);
 BackofficeDependencies _dependencies(FakeShelterRepository repository, User user) => BackofficeDependencies(
   repository: repository,
   animals: repository,
+  requests: FakeAdoptionRequestRepository(repository),
   user: user,
   clock: FixedClock(DateTime(2026, 10, 29, 10)),
   newId: () => 'r-test',

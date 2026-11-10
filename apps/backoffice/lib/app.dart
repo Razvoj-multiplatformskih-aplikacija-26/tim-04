@@ -48,10 +48,12 @@ class _BackofficeAppState extends State<BackofficeApp> {
           ),
           BlocProvider(
             create: (_) => AdoptionRequestBloc(
-              repository: dependencies.repository,
               user: dependencies.user,
-              clock: dependencies.clock.now,
-              newId: dependencies.newId,
+              getRequests: dependencies.getRequests,
+              submitRequest: dependencies.submitRequest,
+              withdrawRequest: dependencies.withdrawRequest,
+              approveRequest: dependencies.approveRequest,
+              rejectRequest: dependencies.rejectRequest,
             )..add(const MyRequestsRequested()),
           ),
         ],

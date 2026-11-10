@@ -1,20 +1,35 @@
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:equatable/equatable.dart';
-
-import '../shelter_repository.dart';
+import 'package:use_cases/use_cases.dart';
 
 part 'requests_event.dart';
 part 'requests_state.dart';
 
 final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionRequestState> {
-  AdoptionRequestBloc({required this.repository, required this.user, required this.clock, required this.newId})
-    : super(const RequestsLoading()) {
+  AdoptionRequestBloc({
+    required this.user,
+    required this.getRequests,
+    required this.submitRequest,
+    required this.withdrawRequest,
+    required this.approveRequest,
+    required this.rejectRequest,
+  }) : super(const RequestsLoading()) {
     on<MyRequestsRequested>((event, emit) => _load(emit));
-    on<RequestSubmitted>((event, emit) => _onSubmitted(event, emit));
-    on<RequestWithdrawn>((event, emit) => _onWithdrawn(event, emit));
-    on<RequestApproved>((event, emit) => _onApproved(event, emit));
-    on<RequestRejected>((event, emit) => _onRejected(event, emit));
+    on<RequestSubmitted>(
+      (event, emit) => _act(
+        emit,
+        () => submitRequest(animalId: event.animalId, motivation: event.motivation, by: user),
+        (request) => request,
+      ),
+    );
+    on<RequestWithdrawn>(
+      (event, emit) => _act(emit, () => withdrawRequest(id: event.id, by: user), (request) => request),
+    );
+    on<RequestRejected>((event, emit) => _act(emit, () => rejectRequest(id: event.id, by: user), (request) => request));
+    on<RequestApproved>(
+      (event, emit) => _act(emit, () => approveRequest(id: event.id, by: user), (outcome) => outcome.approved),
+    );
     on<RequestsNoticeAcknowledged>((event, emit) {
       final current = state;
       if (current is RequestsLoaded && current.notice != null) {
@@ -23,10 +38,12 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
     });
   }
 
-  final ShelterRepository repository;
   final User user;
-  final DateTime Function() clock;
-  final String Function() newId;
+  final GetRequests getRequests;
+  final SubmitRequest submitRequest;
+  final WithdrawRequest withdrawRequest;
+  final ApproveRequest approveRequest;
+  final RejectRequest rejectRequest;
 
   List<AdoptionRequest> _requests = const [];
 
@@ -40,92 +57,22 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
   }
 
   Future<void> _refresh(Emitter<AdoptionRequestState> emit, {RequestsNotice? notice}) async {
-    _requests = await repository.requests(applicant: user.role == Role.adopter ? user.id : null);
+    _requests = await getRequests(user);
     emit(RequestsLoaded(requests: _requests, notice: notice));
   }
 
-  Future<void> _onSubmitted(RequestSubmitted event, Emitter<AdoptionRequestState> emit) async {
+  Future<void> _act<T>(
+    Emitter<AdoptionRequestState> emit,
+    Future<Result<T>> Function() action,
+    AdoptionRequest Function(T value) saved,
+  ) async {
     try {
       emit(RequestsLoaded(requests: _requests, busy: true));
-      final animal = await repository.animal(event.animalId);
-      final mine = await repository.requests(applicant: user.id);
-      final result = submitRequest(
-        id: AdoptionRequestId(newId()),
-        user: user,
-        animal: animal,
-        myRequests: mine,
-        motivation: event.motivation,
-        now: clock(),
-      );
-      switch (result) {
+      switch (await action()) {
         case Failure(:final error):
           emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
         case Success(:final value):
-          await repository.saveRequest(value);
-          await _refresh(emit, notice: RequestSaved(value));
-      }
-    } catch (error) {
-      emit(RequestsLoaded(requests: _requests, notice: RequestFailed(error)));
-    }
-  }
-
-  Future<void> _onWithdrawn(RequestWithdrawn event, Emitter<AdoptionRequestState> emit) async {
-    try {
-      emit(RequestsLoaded(requests: _requests, busy: true));
-      final request = _requests.firstWhere((r) => r.id == event.id);
-      final result = withdrawRequest(request: request, by: user, now: clock());
-      switch (result) {
-        case Failure(:final error):
-          emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
-        case Success(:final value):
-          await repository.saveRequest(value);
-          await _refresh(emit, notice: RequestSaved(value));
-      }
-    } catch (error) {
-      emit(RequestsLoaded(requests: _requests, notice: RequestFailed(error)));
-    }
-  }
-
-  Future<void> _onRejected(RequestRejected event, Emitter<AdoptionRequestState> emit) async {
-    try {
-      emit(RequestsLoaded(requests: _requests, busy: true));
-      final request = _requests.firstWhere((r) => r.id == event.id);
-      final result = rejectRequest(request: request, by: user);
-      switch (result) {
-        case Failure(:final error):
-          emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
-        case Success(:final value):
-          await repository.saveRequest(value);
-          await _refresh(emit, notice: RequestSaved(value));
-      }
-    } catch (error) {
-      emit(RequestsLoaded(requests: _requests, notice: RequestFailed(error)));
-    }
-  }
-
-  Future<void> _onApproved(RequestApproved event, Emitter<AdoptionRequestState> emit) async {
-    try {
-      emit(RequestsLoaded(requests: _requests, busy: true));
-      final request = _requests.firstWhere((r) => r.id == event.id);
-      final animal = await repository.animal(request.animalId);
-      final all = await repository.requests(animal: request.animalId);
-      final result = approveRequest(
-        animal: animal,
-        request: request,
-        allRequestsForAnimal: all,
-        by: user,
-        now: clock(),
-      );
-      switch (result) {
-        case Failure(:final error):
-          emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
-        case Success(:final value):
-          await repository.saveAnimal(value.animal);
-          await repository.saveRequest(value.approved);
-          for (final rejected in value.rejected) {
-            await repository.saveRequest(rejected);
-          }
-          await _refresh(emit, notice: RequestSaved(value.approved));
+          await _refresh(emit, notice: RequestSaved(saved(value)));
       }
     } catch (error) {
       emit(RequestsLoaded(requests: _requests, notice: RequestFailed(error)));

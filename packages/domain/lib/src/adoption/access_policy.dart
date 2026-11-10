@@ -17,4 +17,6 @@ abstract final class AccessPolicy {
   static bool canUseMobileApp(User user) => user.role == Role.adopter;
 
   static bool canUseBackoffice(User user) => user.role.isStaff;
+
+  static bool canViewRequest(User user, AdoptionRequest request) => user.role.isStaff || user.id == request.applicantId;
 }

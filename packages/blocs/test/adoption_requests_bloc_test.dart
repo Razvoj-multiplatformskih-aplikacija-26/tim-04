@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:test/test.dart';
+import 'package:use_cases/use_cases.dart';
 
 import 'fake_shelter_repository.dart';
 
@@ -11,7 +12,7 @@ void main() {
   const jelena = User(id: UserId('u-jelena'), name: 'jelena', role: Role.adopter);
   const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
 
-  final now = DateTime(2026, 10, 28);
+  final now = DateTime.utc(2026, 10, 28);
   final motivation = RequestMotivation.parse('Imam dvorište i mnogo slobodnog vremena.').valueOrNull!;
 
   Animal animal(String id, String name) => Animal(
@@ -50,9 +51,18 @@ void main() {
 
   late FakeShelterRepository repo;
 
-  AdoptionRequestBloc blocWith(User user, List<AdoptionRequest> requests) {
-    repo = FakeShelterRepository(animals: [rex, luna, bobi], requests: requests);
-    return AdoptionRequestBloc(repository: repo, user: user, clock: () => now, newId: () => 'r-new');
+  AdoptionRequestBloc blocWith(User user, List<AdoptionRequest> list) {
+    repo = FakeShelterRepository(animals: [rex, luna, bobi], requests: list);
+    final requests = FakeAdoptionRequestRepository(repo);
+    final clock = FixedClock(now);
+    return AdoptionRequestBloc(
+      user: user,
+      getRequests: GetRequests(requests: requests),
+      submitRequest: SubmitRequest(requests: requests, animals: repo, clock: clock, newId: () => 'r-new'),
+      withdrawRequest: WithdrawRequest(requests: requests, clock: clock),
+      approveRequest: ApproveRequest(requests: requests, animals: repo, clock: clock),
+      rejectRequest: RejectRequest(requests: requests),
+    );
   }
 
   group('loading', () {

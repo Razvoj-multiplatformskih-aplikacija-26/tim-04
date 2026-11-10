@@ -100,3 +100,57 @@ final class FakeShelterRepository implements ShelterRepository, AnimalRepository
     return Success(animal);
   }
 }
+
+final class FakeAdoptionRequestRepository implements AdoptionRequestRepository {
+  FakeAdoptionRequestRepository(this._store);
+
+  final FakeShelterRepository _store;
+
+  @override
+  Future<List<AdoptionRequest>> requests({UserId? applicant, AnimalId? animal}) =>
+      _store.requests(applicant: applicant, animal: animal);
+
+  @override
+  Future<AdoptionRequest?> find(AdoptionRequestId id) async {
+    await _store._roundTrip();
+    return _store._requests.where((r) => r.id == id).firstOrNull;
+  }
+
+  @override
+  Future<Result<AdoptionRequest>> submit(AdoptionRequest request) async {
+    await _store._roundTrip();
+    _store._requests.add(request);
+    return Success(request);
+  }
+
+  @override
+  Future<Result<AdoptionRequest>> save(AdoptionRequest request, {required AdoptionRequestStatus from}) async {
+    await _store._roundTrip();
+    final requests = _store._requests;
+    final index = requests.indexWhere((r) => r.id == request.id);
+    if (index == -1) return const Failure(NotFound());
+    if (requests[index].status != from) return const Failure(InvalidRequestTransition());
+    requests[index] = request;
+    return Success(request);
+  }
+
+  @override
+  Future<Result<ApprovalOutcome>> approve(ApprovalOutcome outcome) async {
+    await _store._roundTrip();
+    final animals = _store._animals;
+    final requests = _store._requests;
+    final animalIndex = animals.indexWhere((a) => a.id == outcome.animal.id);
+    final requestIndex = requests.indexWhere((r) => r.id == outcome.approved.id);
+    if (animalIndex == -1 ||
+        requestIndex == -1 ||
+        animals[animalIndex].status is! ReadyForAdoption ||
+        requests[requestIndex].status != AdoptionRequestStatus.pending) {
+      return const Failure(InvalidRequestTransition());
+    }
+    animals[animalIndex] = outcome.animal;
+    for (final changed in [outcome.approved, ...outcome.rejected]) {
+      requests[requests.indexWhere((r) => r.id == changed.id)] = changed;
+    }
+    return Success(outcome);
+  }
+}

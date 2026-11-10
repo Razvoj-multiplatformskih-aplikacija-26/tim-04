@@ -10,12 +10,13 @@ import 'data/seed.dart';
 import 'router.dart';
 
 class UtocisteApp extends StatefulWidget {
-  const UtocisteApp({super.key, required this.repository, required this.animals});
+  const UtocisteApp({super.key, required this.repository, required this.animals, required this.requests});
 
   static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn');
 
   final ShelterRepository repository;
   final AnimalRepository animals;
+  final AdoptionRequestRepository requests;
 
   @override
   State<UtocisteApp> createState() => _UtocisteAppState();
@@ -55,10 +56,21 @@ class _UtocisteAppState extends State<UtocisteApp> {
           ),
           BlocProvider(
             create: (_) => AdoptionRequestBloc(
-              repository: repository,
               user: currentUser,
-              clock: DateTime.now,
-              newId: _newRequestId,
+              getRequests: GetRequests(requests: widget.requests),
+              submitRequest: SubmitRequest(
+                requests: widget.requests,
+                animals: widget.animals,
+                clock: const SystemClock(),
+                newId: _newRequestId,
+              ),
+              withdrawRequest: WithdrawRequest(requests: widget.requests, clock: const SystemClock()),
+              approveRequest: ApproveRequest(
+                requests: widget.requests,
+                animals: widget.animals,
+                clock: const SystemClock(),
+              ),
+              rejectRequest: RejectRequest(requests: widget.requests),
             )..add(const MyRequestsRequested()),
           ),
         ],
