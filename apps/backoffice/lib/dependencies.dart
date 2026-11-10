@@ -35,5 +35,5 @@ final class BackofficeDependencies {
   final List<User> users;
   final FakeShelterRepository? fakeRepository;
 
-  String nameOf(UserId id) => users.where((u) => u.id == id).firstOrNull?.username ?? id.value;
+  String nameOf(UserId id) => users.where((u) => u.id == id).firstOrNull?.name ?? id.value;
 }

@@ -1,17 +1,18 @@
 import 'package:domain/domain.dart';
 
-const coordinator = User(id: UserId('u-coordinator'), username: 'Dragana Ilić', role: Role.coordinator);
-const seniorVolunteer = User(id: UserId('u-senior'), username: 'Petar Simić', role: Role.seniorVolunteer);
-const veterinarian = User(id: UserId('u-vet'), username: 'dr Ivana Lazić', role: Role.veterinarian);
+const coordinator = User(id: UserId('u-coordinator'), name: 'Dragana Ilić', role: Role.coordinator);
+const seniorVolunteer = User(id: UserId('u-senior'), name: 'Petar Simić', role: Role.seniorVolunteer);
+const veterinarian = User(id: UserId('u-vet'), name: 'dr Ivana Lazić', role: Role.veterinarian);
+const volunteer = User(id: UserId('u-volunteer'), name: 'Jovana Marković', role: Role.volunteer);
 
-const ana = User(id: UserId('u-ana'), username: 'Ana Petrović', role: Role.adopter);
-const marko = User(id: UserId('u-marko'), username: 'Marko Jovanović', role: Role.adopter);
-const jelena = User(id: UserId('u-jelena'), username: 'Jelena Nikolić', role: Role.adopter);
-const nikola = User(id: UserId('u-nikola'), username: 'Nikola Đorđević', role: Role.adopter);
-const milica = User(id: UserId('u-milica'), username: 'Milica Stojanović', role: Role.adopter);
-const stefan = User(id: UserId('u-stefan'), username: 'Stefan Ilić', role: Role.adopter);
+const ana = User(id: UserId('u-ana'), name: 'Ana Petrović', role: Role.adopter);
+const marko = User(id: UserId('u-marko'), name: 'Marko Jovanović', role: Role.adopter);
+const jelena = User(id: UserId('u-jelena'), name: 'Jelena Nikolić', role: Role.adopter);
+const nikola = User(id: UserId('u-nikola'), name: 'Nikola Đorđević', role: Role.adopter);
+const milica = User(id: UserId('u-milica'), name: 'Milica Stojanović', role: Role.adopter);
+const stefan = User(id: UserId('u-stefan'), name: 'Stefan Ilić', role: Role.adopter);
 
-const seedUsers = [coordinator, seniorVolunteer, veterinarian, ana, marko, jelena, nikola, milica, stefan];
+const seedUsers = [coordinator, seniorVolunteer, veterinarian, volunteer, ana, marko, jelena, nikola, milica, stefan];
 
 AnimalName _name(String text) => AnimalName.parse(text).valueOrNull!;
 
