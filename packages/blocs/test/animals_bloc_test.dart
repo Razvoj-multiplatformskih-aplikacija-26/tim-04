@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:test/test.dart';
+import 'package:use_cases/use_cases.dart';
 
 import 'fake_shelter_repository.dart';
 
@@ -20,9 +21,27 @@ void main() {
   final ready = animal('a-1', ReadyForAdoption(since: DateTime(2026, 9, 1)));
   final resident = animal('a-2', const PermanentResident(reason: 'Starost'));
 
+  /// The use cases' clock. In UTC, because [FixedClock] returns UTC and a local DateTime is never == a UTC one.
+  final now = DateTime.utc(2026, 11, 2, 10);
+
+  late FakeShelterRepository repository;
+
+  /// Builds the bloc over [repo] with every use case it needs; a new animal gets the id `a-new`.
+  AnimalsBloc blocWith(FakeShelterRepository repo, {AnimalsFilter initialFilter = AnimalsFilter.all}) {
+    repository = repo;
+    final clock = FixedClock(now);
+    return AnimalsBloc(
+      getAnimals: GetAnimals(animals: repo),
+      intakeAnimal: IntakeAnimal(animals: repo, clock: clock, newId: () => 'a-new'),
+      startQuarantine: StartQuarantine(animals: repo, clock: clock),
+      endQuarantine: EndQuarantine(animals: repo, clock: clock),
+      initialFilter: initialFilter,
+    );
+  }
+
   blocTest<AnimalsBloc, AnimalsState>(
     'loads animals',
-    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready, resident])),
+    build: () => blocWith(FakeShelterRepository(animals: [ready, resident])),
     act: (bloc) => bloc.add(const AnimalsRequested()),
     expect: () => [
       const AnimalsLoading(),
@@ -32,7 +51,7 @@ void main() {
 
   blocTest<AnimalsBloc, AnimalsState>(
     'fails, then retries',
-    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])..failNextRequest()),
+    build: () => blocWith(FakeShelterRepository(animals: [ready])..failNextRequest()),
     act: (bloc) async {
       bloc.add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
@@ -48,7 +67,7 @@ void main() {
 
   blocTest<AnimalsBloc, AnimalsState>(
     'filters, shows empty, keeps selection',
-    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready, resident])),
+    build: () => blocWith(FakeShelterRepository(animals: [ready, resident])),
     act: (bloc) async {
       bloc.add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
@@ -67,11 +86,11 @@ void main() {
 
   blocTest<AnimalsBloc, AnimalsState>(
     'refresh reloads without showing the spinner',
-    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+    build: () => blocWith(FakeShelterRepository(animals: [ready])),
     act: (bloc) async {
       bloc.add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
-      await bloc.repository.saveAnimal(ready.copyWith(status: resident.status));
+      await repository.saveAnimal(ready.copyWith(status: resident.status));
       bloc.add(const AnimalsRefreshed());
     },
     expect: () => [
@@ -86,11 +105,11 @@ void main() {
 
   blocTest<AnimalsBloc, AnimalsState>(
     'a failed refresh keeps the current list',
-    build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+    build: () => blocWith(FakeShelterRepository(animals: [ready])),
     act: (bloc) async {
       bloc.add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
-      (bloc.repository as FakeShelterRepository).failNextRequest();
+      repository.failNextRequest();
       bloc.add(const AnimalsRefreshed());
     },
     expect: () => [
@@ -102,17 +121,14 @@ void main() {
   group('intake', () {
     const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
     const vet = User(id: UserId('u-vet'), name: 'veterinar', role: Role.veterinarian);
-    final now = DateTime(2026, 11, 2, 10);
 
     AnimalIntakeSubmitted intake({User by = coordinator, String name = 'Mrki'}) => AnimalIntakeSubmitted(
-      id: const AnimalId('a-new'),
       by: by,
       name: name,
       species: Species.dog,
       birthDate: DateTime(2025, 5, 1),
       description: 'Pronađen kraj puta.',
       enclosureId: const EnclosureId('e-1'),
-      now: now,
     );
 
     final mrki = Animal(
@@ -128,10 +144,7 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'saves the new animal as Received, shows every animal and reports it',
-      build: () => AnimalsBloc(
-        repository: FakeShelterRepository(animals: [ready]),
-        initialFilter: AnimalsFilter.readyForAdoption,
-      ),
+      build: () => blocWith(FakeShelterRepository(animals: [ready]), initialFilter: AnimalsFilter.readyForAdoption),
       act: (bloc) async {
         bloc.add(const AnimalsRequested());
         await Future<void>.delayed(Duration.zero);
@@ -141,12 +154,12 @@ void main() {
       expect: () => [
         AnimalsLoaded(animals: [ready, mrki], filter: AnimalsFilter.all, notice: AnimalSaved(mrki)),
       ],
-      verify: (bloc) async => expect(await bloc.repository.animals(), [ready, mrki]),
+      verify: (_) async => expect(await repository.animals(), [ready, mrki]),
     );
 
     blocTest<AnimalsBloc, AnimalsState>(
       'a name that breaks P1 is refused and nothing is saved',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+      build: () => blocWith(FakeShelterRepository(animals: [ready])),
       act: (bloc) async {
         bloc.add(const AnimalsRequested());
         await Future<void>.delayed(Duration.zero);
@@ -156,12 +169,12 @@ void main() {
       expect: () => [
         AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all, notice: const AnimalRefused(NameTooShort())),
       ],
-      verify: (bloc) async => expect(await bloc.repository.animals(), [ready]),
+      verify: (_) async => expect(await repository.animals(), [ready]),
     );
 
     blocTest<AnimalsBloc, AnimalsState>(
       'only the coordinator may take in an animal',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+      build: () => blocWith(FakeShelterRepository(animals: [ready])),
       act: (bloc) async {
         bloc.add(const AnimalsRequested());
         await Future<void>.delayed(Duration.zero);
@@ -175,7 +188,7 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'acknowledging the notice clears it',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+      build: () => blocWith(FakeShelterRepository(animals: [ready])),
       act: (bloc) async {
         bloc.add(const AnimalsRequested());
         await Future<void>.delayed(Duration.zero);
@@ -191,8 +204,7 @@ void main() {
 
     test('enclosures lists every enclosure in use once, sorted', () async {
       final other = resident.copyWith(enclosureId: const EnclosureId('a-0'));
-      final bloc = AnimalsBloc(repository: FakeShelterRepository(animals: [ready, other, ready]))
-        ..add(const AnimalsRequested());
+      final bloc = blocWith(FakeShelterRepository(animals: [ready, other, ready]))..add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
       expect(bloc.enclosures, const [EnclosureId('a-0'), EnclosureId('e-1')]);
       await bloc.close();
@@ -202,8 +214,7 @@ void main() {
   group('quarantine', () {
     const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
     const vet = User(id: UserId('u-vet'), name: 'veterinar', role: Role.veterinarian);
-    final now = DateTime(2026, 11, 2, 10);
-    final until = DateTime(2026, 11, 16);
+    final until = DateTime.utc(2026, 11, 16);
     final received = animal('a-3', Received(receivedBy: coordinator.id, at: DateTime(2026, 11, 1)));
     final quarantined = animal('a-4', InQuarantine(since: DateTime(2026, 10, 20), until: DateTime(2026, 11, 3)));
 
@@ -214,10 +225,10 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'starting it moves a received animal into quarantine until the chosen day',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [received])),
+      build: () => blocWith(FakeShelterRepository(animals: [received])),
       act: (bloc) async {
         await loaded(bloc);
-        bloc.add(QuarantineStarted(animalId: received.id, by: coordinator, now: now, until: until));
+        bloc.add(QuarantineStarted(animalId: received.id, by: coordinator, until: until));
       },
       skip: 2,
       expect: () {
@@ -232,10 +243,10 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'an animal that is already ready cannot go into quarantine',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [ready])),
+      build: () => blocWith(FakeShelterRepository(animals: [ready])),
       act: (bloc) async {
         await loaded(bloc);
-        bloc.add(QuarantineStarted(animalId: ready.id, by: coordinator, now: now, until: until));
+        bloc.add(QuarantineStarted(animalId: ready.id, by: coordinator, until: until));
       },
       skip: 2,
       expect: () => [
@@ -254,10 +265,10 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'the veterinarian ends it and the animal becomes ready for adoption',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [quarantined])),
+      build: () => blocWith(FakeShelterRepository(animals: [quarantined])),
       act: (bloc) async {
         await loaded(bloc);
-        bloc.add(QuarantineEnded(animalId: quarantined.id, by: vet, now: now));
+        bloc.add(QuarantineEnded(animalId: quarantined.id, by: vet));
       },
       skip: 2,
       expect: () {
@@ -270,15 +281,28 @@ void main() {
 
     blocTest<AnimalsBloc, AnimalsState>(
       'the veterinarian may not start a quarantine',
-      build: () => AnimalsBloc(repository: FakeShelterRepository(animals: [received])),
+      build: () => blocWith(FakeShelterRepository(animals: [received])),
       act: (bloc) async {
         await loaded(bloc);
-        bloc.add(QuarantineStarted(animalId: received.id, by: vet, now: now, until: until));
+        bloc.add(QuarantineStarted(animalId: received.id, by: vet, until: until));
       },
       skip: 2,
       expect: () => [
         AnimalsLoaded(animals: [received], filter: AnimalsFilter.all, notice: const AnimalRefused(NotAllowed())),
       ],
+    );
+
+    blocTest<AnimalsBloc, AnimalsState>(
+      'an animal changed by someone else in the meantime is refused, not overwritten',
+      build: () => blocWith(FakeShelterRepository(animals: [quarantined])),
+      act: (bloc) async {
+        await loaded(bloc);
+        // Another staff member ends the quarantine first, so the bloc's own end sees a different status.
+        await repository.saveAnimal(quarantined.copyWith(status: ReadyForAdoption(since: now)));
+        bloc.add(QuarantineEnded(animalId: quarantined.id, by: vet));
+      },
+      skip: 2,
+      expect: () => [isA<AnimalsLoaded>().having((state) => state.notice, 'notice', isA<AnimalRefused>())],
     );
   });
 }

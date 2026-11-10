@@ -1,17 +1,22 @@
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:equatable/equatable.dart';
+import 'package:use_cases/use_cases.dart';
 
-import '../shelter_repository.dart';
 import 'animals_filter.dart';
 
 part 'animals_event.dart';
 part 'animals_state.dart';
 
 final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
-  AnimalsBloc({required this.repository, AnimalsFilter initialFilter = AnimalsFilter.all})
-    : _filter = initialFilter,
-      super(const AnimalsLoading()) {
+  AnimalsBloc({
+    required this.getAnimals,
+    required this.intakeAnimal,
+    required this.startQuarantine,
+    required this.endQuarantine,
+    AnimalsFilter initialFilter = AnimalsFilter.all,
+  }) : _filter = initialFilter,
+       super(const AnimalsLoading()) {
     on<AnimalsRequested>((event, emit) => _load(emit));
     on<AnimalsRetried>((event, emit) => _load(emit));
     on<AnimalsRefreshed>((event, emit) => _refresh(emit));
@@ -23,23 +28,33 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
       _selectedId = event.id;
       if (state is AnimalsLoaded) _show(emit);
     });
-    on<AnimalIntakeSubmitted>((event, emit) => _intake(event, emit));
+    on<AnimalIntakeSubmitted>(
+      (event, emit) => _save(
+        emit,
+        () => intakeAnimal(
+          by: event.by,
+          name: event.name,
+          species: event.species,
+          birthDate: event.birthDate,
+          description: event.description,
+          enclosureId: event.enclosureId,
+        ),
+        showAllWhenSaved: true,
+      ),
+    );
     on<QuarantineStarted>(
-      (event, emit) => _change(event.animalId, emit, (animal) {
-        return startQuarantine(animal: animal, by: event.by, now: event.now, until: event.until);
-      }),
+      (event, emit) => _save(emit, () => startQuarantine(id: event.animalId, by: event.by, until: event.until)),
     );
-    on<QuarantineEnded>(
-      (event, emit) => _change(event.animalId, emit, (animal) {
-        return endQuarantine(animal: animal, by: event.by, now: event.now);
-      }),
-    );
+    on<QuarantineEnded>((event, emit) => _save(emit, () => endQuarantine(id: event.animalId, by: event.by)));
     on<AnimalsNoticeAcknowledged>((event, emit) {
       if (state case AnimalsLoaded(notice: _?)) _show(emit);
     });
   }
 
-  final ShelterRepository repository;
+  final GetAnimals getAnimals;
+  final IntakeAnimal intakeAnimal;
+  final StartQuarantine startQuarantine;
+  final EndQuarantine endQuarantine;
 
   List<Animal> _all = const [];
   AnimalsFilter _filter;
@@ -52,7 +67,6 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
     return null;
   }
 
-  /// Every enclosure in use, sorted, for the intake form.
   List<EnclosureId> get enclosures {
     final ids = {for (final animal in _all) animal.enclosureId.value}.toList()..sort();
     return [for (final id in ids) EnclosureId(id)];
@@ -61,7 +75,7 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
   Future<void> _load(Emitter<AnimalsState> emit) async {
     emit(const AnimalsLoading());
     try {
-      _all = await repository.animals();
+      _all = await getAnimals();
       _show(emit);
     } catch (error) {
       emit(AnimalsFailure(error));
@@ -70,53 +84,27 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
 
   Future<void> _refresh(Emitter<AnimalsState> emit) async {
     try {
-      _all = await repository.animals();
+      _all = await getAnimals();
       _show(emit);
-    } catch (_) {
-      // Keep showing the list we already have; the next load will try again.
-    }
+    } catch (_) {}
   }
 
-  Future<void> _intake(AnimalIntakeSubmitted event, Emitter<AnimalsState> emit) async {
-    final result = intakeAnimal(
-      id: event.id,
-      by: event.by,
-      name: event.name,
-      species: event.species,
-      birthDate: event.birthDate,
-      description: event.description,
-      enclosureId: event.enclosureId,
-      now: event.now,
-    );
-    // Show every animal so the new one (Received) is not hidden by the current filter.
-    if (result is Success) _filter = AnimalsFilter.all;
-    await _save(result, emit);
-  }
-
-  /// Applies a domain transition (e.g. [startQuarantine]) to the animal with [id] and saves the result.
-  Future<void> _change(
-    AnimalId id,
+  Future<void> _save(
     Emitter<AnimalsState> emit,
-    Result<Animal> Function(Animal animal) transition,
-  ) async {
-    final animal = animalById(id);
-    if (animal == null) return;
-    await _save(transition(animal), emit);
-  }
-
-  /// A refused rule becomes [AnimalRefused]; otherwise the animal is saved, the list reloaded, and [AnimalSaved] shown.
-  Future<void> _save(Result<Animal> result, Emitter<AnimalsState> emit) async {
-    switch (result) {
-      case Failure(:final error):
-        _show(emit, notice: AnimalRefused(error));
-      case Success(value: final animal):
-        try {
-          await repository.saveAnimal(animal);
-          _all = await repository.animals();
+    Future<Result<Animal>> Function() action, {
+    bool showAllWhenSaved = false,
+  }) async {
+    try {
+      switch (await action()) {
+        case Failure(:final error):
+          _show(emit, notice: AnimalRefused(error));
+        case Success(value: final animal):
+          if (showAllWhenSaved) _filter = AnimalsFilter.all;
+          _all = await getAnimals();
           _show(emit, notice: AnimalSaved(animal));
-        } catch (error) {
-          _show(emit, notice: AnimalSaveFailed(error));
-        }
+      }
+    } on RepositoryException catch (error) {
+      _show(emit, notice: AnimalSaveFailed(error));
     }
   }
 
