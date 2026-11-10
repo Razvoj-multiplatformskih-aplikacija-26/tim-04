@@ -100,8 +100,8 @@ void main() {
   );
 
   group('intake', () {
-    const coordinator = User(id: UserId('u-coord'), username: 'koordinator', role: Role.coordinator);
-    const vet = User(id: UserId('u-vet'), username: 'veterinar', role: Role.veterinarian);
+    const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
+    const vet = User(id: UserId('u-vet'), name: 'veterinar', role: Role.veterinarian);
     final now = DateTime(2026, 11, 2, 10);
 
     AnimalIntakeSubmitted intake({User by = coordinator, String name = 'Mrki'}) => AnimalIntakeSubmitted(
@@ -200,8 +200,8 @@ void main() {
   });
 
   group('quarantine', () {
-    const coordinator = User(id: UserId('u-coord'), username: 'koordinator', role: Role.coordinator);
-    const vet = User(id: UserId('u-vet'), username: 'veterinar', role: Role.veterinarian);
+    const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
+    const vet = User(id: UserId('u-vet'), name: 'veterinar', role: Role.veterinarian);
     final now = DateTime(2026, 11, 2, 10);
     final until = DateTime(2026, 11, 16);
     final received = animal('a-3', Received(receivedBy: coordinator.id, at: DateTime(2026, 11, 1)));

@@ -6,10 +6,10 @@ import 'package:test/test.dart';
 import 'fake_shelter_repository.dart';
 
 void main() {
-  const ana = User(id: UserId('u-ana'), username: 'ana', role: Role.adopter);
-  const marko = User(id: UserId('u-marko'), username: 'marko', role: Role.adopter);
-  const jelena = User(id: UserId('u-jelena'), username: 'jelena', role: Role.adopter);
-  const coordinator = User(id: UserId('u-coord'), username: 'koordinator', role: Role.coordinator);
+  const ana = User(id: UserId('u-ana'), name: 'ana', role: Role.adopter);
+  const marko = User(id: UserId('u-marko'), name: 'marko', role: Role.adopter);
+  const jelena = User(id: UserId('u-jelena'), name: 'jelena', role: Role.adopter);
+  const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);
 
   final now = DateTime(2026, 10, 28);
   final motivation = RequestMotivation.parse('Imam dvorište i mnogo slobodnog vremena.').valueOrNull!;

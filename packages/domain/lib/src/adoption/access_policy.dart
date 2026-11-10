@@ -13,4 +13,8 @@ abstract final class AccessPolicy {
   static bool canEndQuarantine(User user) => user.role == Role.coordinator || user.role == Role.veterinarian;
 
   static bool canChangeAnimalStatus(User user) => user.role == Role.coordinator;
+
+  static bool canUseMobileApp(User user) => user.role == Role.adopter;
+
+  static bool canUseBackoffice(User user) => user.role.isStaff;
 }

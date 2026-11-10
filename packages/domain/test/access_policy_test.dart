@@ -92,5 +92,31 @@ void main() {
         expect(AccessPolicy.canChangeAnimalStatus(vet), isFalse);
       });
     });
+
+    group('canUseMobileApp', () {
+      test('an adopter can use the mobile app', () {
+        expect(AccessPolicy.canUseMobileApp(ana), isTrue);
+      });
+
+      test('staff cannot use the mobile app', () {
+        expect(AccessPolicy.canUseMobileApp(volunteer), isFalse);
+        expect(AccessPolicy.canUseMobileApp(senior), isFalse);
+        expect(AccessPolicy.canUseMobileApp(vet), isFalse);
+        expect(AccessPolicy.canUseMobileApp(coordinator), isFalse);
+      });
+    });
+
+    group('canUseBackoffice', () {
+      test('every staff role can use the backoffice', () {
+        expect(AccessPolicy.canUseBackoffice(volunteer), isTrue);
+        expect(AccessPolicy.canUseBackoffice(senior), isTrue);
+        expect(AccessPolicy.canUseBackoffice(vet), isTrue);
+        expect(AccessPolicy.canUseBackoffice(coordinator), isTrue);
+      });
+
+      test('an adopter cannot use the backoffice', () {
+        expect(AccessPolicy.canUseBackoffice(ana), isFalse);
+      });
+    });
   });
 }
