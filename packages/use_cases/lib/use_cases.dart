@@ -5,3 +5,4 @@ export 'src/ports/adoption_request_repository.dart';
 export 'src/reject_request.dart';
 export 'src/repository_exception.dart';
 export 'src/withdraw_request.dart';
+export 'src/ports/animal_repository.dart';
