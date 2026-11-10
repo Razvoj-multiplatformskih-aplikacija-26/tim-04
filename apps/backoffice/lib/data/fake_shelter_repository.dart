@@ -1,16 +1,8 @@
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
+import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
-
-final class RepositoryException implements Exception {
-  const RepositoryException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => 'RepositoryException: $message';
-}
 
 /// In-memory stand-in for the server. Every call waits [latency] and fails while [failingRequests] is above zero.
 final class FakeShelterRepository implements ShelterRepository {
@@ -33,7 +25,7 @@ final class FakeShelterRepository implements ShelterRepository {
     await Future<void>.delayed(latency);
     if (failingRequests > 0) {
       failingRequests--;
-      throw const RepositoryException('Simulated outage');
+      throw const RepositoryException('Simulated outage', failure: RepositoryFailure.unreachable);
     }
   }
 
@@ -46,7 +38,10 @@ final class FakeShelterRepository implements ShelterRepository {
   @override
   Future<Animal> animal(AnimalId id) async {
     await _roundTrip();
-    return _animals.firstWhere((a) => a.id == id, orElse: () => throw RepositoryException('No animal $id'));
+    return _animals.firstWhere(
+      (a) => a.id == id,
+      orElse: () => throw RepositoryException('No animal $id', failure: RepositoryFailure.serverError),
+    );
   }
 
   @override
