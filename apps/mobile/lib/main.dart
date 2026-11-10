@@ -8,5 +8,5 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('sr_Latn');
   final repository = FakeShelterRepository();
-  runApp(UtocisteApp(repository: repository, animals: repository));
+  runApp(UtocisteApp(repository: repository, animals: repository, requests: FakeAdoptionRequestRepository(repository)));
 }
