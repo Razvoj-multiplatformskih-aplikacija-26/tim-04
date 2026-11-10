@@ -9,14 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:use_cases/use_cases.dart';
 
 const _wide = Size(1400, 900);
 const _narrow = Size(600, 900);
 
 BackofficeDependencies _dependencies(FakeShelterRepository repository, User user) => BackofficeDependencies(
   repository: repository,
+  animals: repository,
   user: user,
-  clock: () => DateTime(2026, 10, 29, 10),
+  clock: FixedClock(DateTime(2026, 10, 29, 10)),
   newId: () => 'r-test',
   users: seedUsers,
   fakeRepository: repository,

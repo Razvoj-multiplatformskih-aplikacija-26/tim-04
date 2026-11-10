@@ -1,7 +1,8 @@
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
+import 'package:use_cases/use_cases.dart';
 
-final class FakeShelterRepository implements ShelterRepository {
+final class FakeShelterRepository implements ShelterRepository, AnimalRepository {
   FakeShelterRepository({List<Animal> animals = const [], List<AdoptionRequest> requests = const []})
     : _animals = [...animals],
       _requests = [...requests];
@@ -15,7 +16,7 @@ final class FakeShelterRepository implements ShelterRepository {
   void _throwIfFailing() {
     if (!_failNext) return;
     _failNext = false;
-    throw Exception('Simulated repository failure');
+    throw const RepositoryException('Simulated repository failure', failure: RepositoryFailure.unreachable);
   }
 
   @override
@@ -59,5 +60,29 @@ final class FakeShelterRepository implements ShelterRepository {
     } else {
       _animals[index] = animal;
     }
+  }
+
+  @override
+  Future<Animal?> find(AnimalId id) async {
+    _throwIfFailing();
+    return _animals.where((a) => a.id == id).firstOrNull;
+  }
+
+  @override
+  Future<Result<Animal>> create(Animal animal) async {
+    _throwIfFailing();
+    _animals.add(animal);
+    return Success(animal);
+  }
+
+  @override
+  Future<Result<Animal>> save(Animal animal, {required AnimalStatus from}) async {
+    _throwIfFailing();
+    final index = _animals.indexWhere((a) => a.id == animal.id);
+    if (index == -1) return const Failure(NotFound());
+    final current = _animals[index];
+    if (current.status != from) return Failure(InvalidTransition(from: current.status, to: animal.status));
+    _animals[index] = animal;
+    return Success(animal);
   }
 }

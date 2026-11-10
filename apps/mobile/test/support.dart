@@ -6,7 +6,7 @@ import 'package:mobile/data/fake_shelter_repository.dart';
 
 Future<void> initializeTestEnvironment() => initializeDateFormatting('sr_Latn');
 
-Widget appWith(FakeShelterRepository repository) => UtocisteApp(repository: repository);
+Widget appWith(FakeShelterRepository repository) => UtocisteApp(repository: repository, animals: repository);
 
 Future<void> settle(WidgetTester tester) => tester.pumpAndSettle(const Duration(milliseconds: 100));
 

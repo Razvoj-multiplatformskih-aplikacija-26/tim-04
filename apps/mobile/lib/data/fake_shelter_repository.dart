@@ -4,7 +4,7 @@ import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
 
-final class FakeShelterRepository implements ShelterRepository {
+final class FakeShelterRepository implements ShelterRepository, AnimalRepository {
   FakeShelterRepository({
     this.latency = const Duration(milliseconds: 600),
     List<Animal>? animals,
@@ -79,5 +79,30 @@ final class FakeShelterRepository implements ShelterRepository {
     } else {
       _animals[index] = animal;
     }
+  }
+
+  @override
+  Future<Animal?> find(AnimalId id) async {
+    await _roundTrip();
+    return _animals.where((a) => a.id == id).firstOrNull;
+  }
+
+  @override
+  Future<Result<Animal>> create(Animal animal) async {
+    await _roundTrip();
+    _animals.add(animal);
+    return Success(animal);
+  }
+
+  /// Saves only while the animal is still in [from], like the server will; otherwise someone changed it first.
+  @override
+  Future<Result<Animal>> save(Animal animal, {required AnimalStatus from}) async {
+    await _roundTrip();
+    final index = _animals.indexWhere((a) => a.id == animal.id);
+    if (index == -1) return const Failure(NotFound());
+    final current = _animals[index];
+    if (current.status != from) return Failure(InvalidTransition(from: current.status, to: animal.status));
+    _animals[index] = animal;
+    return Success(animal);
   }
 }
