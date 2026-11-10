@@ -5,7 +5,7 @@ import 'package:use_cases/use_cases.dart';
 import 'seed.dart';
 
 /// In-memory stand-in for the server. Every call waits [latency] and fails while [failingRequests] is above zero.
-final class FakeShelterRepository implements ShelterRepository, AdoptionRequestRepository {
+final class FakeShelterRepository implements ShelterRepository {
   FakeShelterRepository({
     this.latency = const Duration(milliseconds: 600),
     List<Animal>? animals,
@@ -74,44 +74,57 @@ final class FakeShelterRepository implements ShelterRepository, AdoptionRequestR
       _animals[index] = animal;
     }
   }
+}
+
+final class FakeAdoptionRequestRepository implements AdoptionRequestRepository {
+  FakeAdoptionRequestRepository(this._store);
+
+  final FakeShelterRepository _store;
+
+  @override
+  Future<List<AdoptionRequest>> requests({UserId? applicant, AnimalId? animal}) =>
+      _store.requests(applicant: applicant, animal: animal);
 
   @override
   Future<AdoptionRequest?> find(AdoptionRequestId id) async {
-    await _roundTrip();
-    return _requests.where((r) => r.id == id).firstOrNull;
+    await _store._roundTrip();
+    return _store._requests.where((r) => r.id == id).firstOrNull;
   }
 
   @override
   Future<Result<AdoptionRequest>> submit(AdoptionRequest request) async {
-    await _roundTrip();
-    _requests.add(request);
+    await _store._roundTrip();
+    _store._requests.add(request);
     return Success(request);
   }
 
   @override
   Future<Result<AdoptionRequest>> save(AdoptionRequest request, {required AdoptionRequestStatus from}) async {
-    await _roundTrip();
-    final index = _requests.indexWhere((r) => r.id == request.id);
+    await _store._roundTrip();
+    final requests = _store._requests;
+    final index = requests.indexWhere((r) => r.id == request.id);
     if (index == -1) return const Failure(NotFound());
-    if (_requests[index].status != from) return const Failure(InvalidRequestTransition());
-    _requests[index] = request;
+    if (requests[index].status != from) return const Failure(InvalidRequestTransition());
+    requests[index] = request;
     return Success(request);
   }
 
   @override
   Future<Result<ApprovalOutcome>> approve(ApprovalOutcome outcome) async {
-    await _roundTrip();
-    final animalIndex = _animals.indexWhere((a) => a.id == outcome.animal.id);
-    final requestIndex = _requests.indexWhere((r) => r.id == outcome.approved.id);
+    await _store._roundTrip();
+    final animals = _store._animals;
+    final requests = _store._requests;
+    final animalIndex = animals.indexWhere((a) => a.id == outcome.animal.id);
+    final requestIndex = requests.indexWhere((r) => r.id == outcome.approved.id);
     if (animalIndex == -1 ||
         requestIndex == -1 ||
-        _animals[animalIndex].status is! ReadyForAdoption ||
-        _requests[requestIndex].status != AdoptionRequestStatus.pending) {
+        animals[animalIndex].status is! ReadyForAdoption ||
+        requests[requestIndex].status != AdoptionRequestStatus.pending) {
       return const Failure(InvalidRequestTransition());
     }
-    _animals[animalIndex] = outcome.animal;
+    animals[animalIndex] = outcome.animal;
     for (final changed in [outcome.approved, ...outcome.rejected]) {
-      _requests[_requests.indexWhere((r) => r.id == changed.id)] = changed;
+      requests[requests.indexWhere((r) => r.id == changed.id)] = changed;
     }
     return Success(outcome);
   }
