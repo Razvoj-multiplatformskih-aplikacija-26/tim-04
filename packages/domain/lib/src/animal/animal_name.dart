@@ -18,8 +18,8 @@ final class AnimalName {
   static Result<AnimalName> parse(String input) {
     final text = input.trim();
     final length = text.characters.length;
-    if (length < minLength) return const Failure(NameTooShort());
-    if (length > maxLength) return const Failure(NameTooLong());
+    if (length < minLength) return const Failure(NameTooShort(min: minLength));
+    if (length > maxLength) return const Failure(NameTooLong(max: maxLength));
     return Success(AnimalName._(text));
   }
 

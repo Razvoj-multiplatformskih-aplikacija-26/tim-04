@@ -12,7 +12,7 @@ void main() {
     });
 
     test('Failure carries an error and no value', () {
-      const Result<int> result = Failure(NameTooShort());
+      const Result<int> result = Failure(NameTooShort(min: 2));
 
       expect(result.isSuccess, isFalse);
       expect(result.valueOrNull, isNull);
@@ -20,8 +20,8 @@ void main() {
     });
 
     test('failures with the same error are equal', () {
-      expect(const Failure<int>(MotivationTooShort(12)), const Failure<int>(MotivationTooShort(12)));
-      expect(const Failure<int>(MotivationTooShort(12)), isNot(const Failure<int>(MotivationTooShort(15))));
+      expect(const Failure<int>(MotivationTooShort(12, min: 20)), const Failure<int>(MotivationTooShort(12, min: 20)));
+      expect(const Failure<int>(MotivationTooShort(12, min: 20)), isNot(const Failure<int>(MotivationTooShort(15, min: 20))));
     });
   });
 

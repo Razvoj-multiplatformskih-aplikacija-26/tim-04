@@ -142,7 +142,7 @@ void main() {
       skip: 2,
       expect: () => [
         RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
-        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests(max: 2))),
       ],
       verify: (_) async => expect(await repo.requests(), hasLength(2)),
     );
@@ -162,10 +162,10 @@ void main() {
       skip: 2,
       expect: () => [
         RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
-        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests(max: 2))),
         RequestsLoaded(requests: [anasForRex, anasForLuna]),
         RequestsLoaded(requests: [anasForRex, anasForLuna], busy: true),
-        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests())),
+        RequestsLoaded(requests: [anasForRex, anasForLuna], notice: const RequestRefused(TooManyActiveRequests(max: 2))),
       ],
     );
 

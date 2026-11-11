@@ -13,11 +13,11 @@ void main() {
     });
 
     test('rejects motivations shorter than twenty characters and reports the length', () {
-      expect(RequestMotivation.parse('Volim pse.'), const Failure<RequestMotivation>(MotivationTooShort(10)));
+      expect(RequestMotivation.parse('Volim pse.'), const Failure<RequestMotivation>(MotivationTooShort(10, min: 20)));
     });
 
     test('rejects motivations longer than five hundred characters', () {
-      expect(RequestMotivation.parse('A' * 501), const Failure<RequestMotivation>(MotivationTooLong()));
+      expect(RequestMotivation.parse('A' * 501), const Failure<RequestMotivation>(MotivationTooLong(max: 500)));
     });
   });
 }

@@ -18,8 +18,8 @@ final class RequestMotivation {
   static Result<RequestMotivation> parse(String input) {
     final text = input.trim();
     final length = text.characters.length;
-    if (length < minLength) return Failure(MotivationTooShort(length));
-    if (length > maxLength) return const Failure(MotivationTooLong());
+    if (length < minLength) return Failure(MotivationTooShort(length, min: minLength));
+    if (length > maxLength) return const Failure(MotivationTooLong(max: maxLength));
     return Success(RequestMotivation._(text));
   }
 

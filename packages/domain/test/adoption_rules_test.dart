@@ -57,7 +57,7 @@ void main() {
         (i) => requestBy(ana, id: 'r-$i', animalId: AnimalId('a-other-$i')),
       );
 
-      expect(submit(myRequests: active), const Failure<AdoptionRequest>(TooManyActiveRequests()));
+      expect(submit(myRequests: active), const Failure<AdoptionRequest>(TooManyActiveRequests(max: 2)));
     });
 
     test('does not count withdrawn and rejected requests as active', () {

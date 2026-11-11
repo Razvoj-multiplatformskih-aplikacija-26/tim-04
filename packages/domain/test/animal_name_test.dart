@@ -13,12 +13,12 @@ void main() {
     });
 
     test('rejects names shorter than two characters', () {
-      expect(AnimalName.parse('A'), const Failure<AnimalName>(NameTooShort()));
-      expect(AnimalName.parse('   '), const Failure<AnimalName>(NameTooShort()));
+      expect(AnimalName.parse('A'), const Failure<AnimalName>(NameTooShort(min: 2)));
+      expect(AnimalName.parse('   '), const Failure<AnimalName>(NameTooShort(min: 2)));
     });
 
     test('rejects names longer than forty characters', () {
-      expect(AnimalName.parse('A' * 41), const Failure<AnimalName>(NameTooLong()));
+      expect(AnimalName.parse('A' * 41), const Failure<AnimalName>(NameTooLong(max: 40)));
     });
   });
 }

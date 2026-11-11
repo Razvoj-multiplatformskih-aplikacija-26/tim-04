@@ -174,7 +174,7 @@ void main() {
 
       expect(
         await submit(animalId: rex.id, motivation: motivation, by: ana),
-        const Failure<AdoptionRequest>(TooManyActiveRequests()),
+        const Failure<AdoptionRequest>(TooManyActiveRequests(max: 2)),
       );
       expect(await requests.requests(applicant: ana.id), hasLength(2));
     });
