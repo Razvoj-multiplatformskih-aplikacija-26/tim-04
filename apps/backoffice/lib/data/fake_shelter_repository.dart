@@ -1,11 +1,10 @@
-import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
 
 /// In-memory stand-in for the server. Every call waits [latency] and fails while [failingRequests] is above zero.
-final class FakeShelterRepository implements ShelterRepository, AnimalRepository {
+final class FakeShelterRepository implements AnimalRepository {
   FakeShelterRepository({
     this.latency = const Duration(milliseconds: 600),
     List<Animal>? animals,
@@ -35,44 +34,12 @@ final class FakeShelterRepository implements ShelterRepository, AnimalRepository
     return List.of(_animals);
   }
 
-  @override
-  Future<Animal> animal(AnimalId id) async {
-    await _roundTrip();
-    return _animals.firstWhere(
-      (a) => a.id == id,
-      orElse: () => throw RepositoryException('No animal $id', failure: RepositoryFailure.serverError),
-    );
-  }
-
-  @override
   Future<List<AdoptionRequest>> requests({UserId? applicant, AnimalId? animal}) async {
     await _roundTrip();
     return [
       for (final r in _requests)
         if ((applicant == null || r.applicantId == applicant) && (animal == null || r.animalId == animal)) r,
     ];
-  }
-
-  @override
-  Future<void> saveRequest(AdoptionRequest request) async {
-    await _roundTrip();
-    final index = _requests.indexWhere((r) => r.id == request.id);
-    if (index == -1) {
-      _requests.add(request);
-    } else {
-      _requests[index] = request;
-    }
-  }
-
-  @override
-  Future<void> saveAnimal(Animal animal) async {
-    await _roundTrip();
-    final index = _animals.indexWhere((a) => a.id == animal.id);
-    if (index == -1) {
-      _animals.add(animal);
-    } else {
-      _animals[index] = animal;
-    }
   }
 
   @override

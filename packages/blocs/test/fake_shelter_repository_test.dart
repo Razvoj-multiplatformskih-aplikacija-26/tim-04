@@ -49,8 +49,9 @@ void main() {
       expect(await repo.animals(), [rex, luna]);
     });
 
-    test('finds an animal by id', () async {
-      expect(await repo.animal(luna.id), luna);
+    test('finds an animal by id, and null for an unknown id', () async {
+      expect(await repo.find(luna.id), luna);
+      expect(await repo.find(const AnimalId('a-missing')), isNull);
     });
 
     test('filters requests by applicant and by animal', () async {
@@ -60,33 +61,68 @@ void main() {
       expect(await repo.requests(applicant: ana, animal: rex.id), [anasForRex]);
     });
 
-    test('saveRequest adds a request with a new id', () async {
+    test('submit adds a new request', () async {
       final markosForLuna = request('r-4', by: marko, animalId: luna.id);
 
-      await repo.saveRequest(markosForLuna);
+      final result = await FakeAdoptionRequestRepository(repo).submit(markosForLuna);
 
+      expect(result.valueOrNull, markosForLuna);
       expect(await repo.requests(applicant: marko), [markosForRex, markosForLuna]);
     });
 
-    test('saveRequest replaces a request with the same id', () async {
+    test('save replaces a request that is still in the expected status', () async {
       final withdrawn = anasForRex.copyWith(status: AdoptionRequestStatus.withdrawn);
 
-      await repo.saveRequest(withdrawn);
+      final result = await FakeAdoptionRequestRepository(repo).save(withdrawn, from: AdoptionRequestStatus.pending);
 
+      expect(result.valueOrNull, withdrawn);
       expect(await repo.requests(animal: rex.id), [withdrawn, markosForRex]);
     });
 
-    test('saveAnimal replaces an animal with the same id', () async {
-      final reserved = rex.copyWith(
-        status: Reserved(
-          requestId: anasForRex.id,
-          approvedBy: const UserId('u-coordinator'),
-          at: DateTime(2026, 10, 22),
-        ),
+    test('save refuses a request whose status changed in the meantime', () async {
+      final requests = FakeAdoptionRequestRepository(repo);
+      await requests.save(
+        anasForRex.copyWith(status: AdoptionRequestStatus.rejected),
+        from: AdoptionRequestStatus.pending,
       );
 
-      await repo.saveAnimal(reserved);
+      final result = await requests.save(
+        anasForRex.copyWith(status: AdoptionRequestStatus.withdrawn),
+        from: AdoptionRequestStatus.pending,
+      );
 
+      expect(result.errorOrNull, isA<InvalidRequestTransition>());
+    });
+
+    test('create adds an animal', () async {
+      final bobi = animal('a-bobi', 'Bobi');
+
+      final result = await repo.create(bobi);
+
+      expect(result.valueOrNull, bobi);
+      expect(await repo.animals(), [rex, luna, bobi]);
+    });
+
+    final reserved = rex.copyWith(
+      status: Reserved(requestId: anasForRex.id, approvedBy: const UserId('u-coordinator'), at: DateTime(2026, 10, 22)),
+    );
+
+    test('save replaces an animal that is still in the expected status', () async {
+      final result = await repo.save(reserved, from: rex.status);
+
+      expect(result.valueOrNull, reserved);
+      expect(await repo.animals(), [reserved, luna]);
+    });
+
+    test('save refuses an animal whose status changed in the meantime', () async {
+      await repo.save(reserved, from: rex.status);
+
+      final result = await repo.save(
+        rex.copyWith(status: const PermanentResident(reason: 'Starost')),
+        from: rex.status,
+      );
+
+      expect(result.errorOrNull, isA<InvalidTransition>());
       expect(await repo.animals(), [reserved, luna]);
     });
 
