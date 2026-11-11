@@ -4,15 +4,14 @@ import 'serbian.dart';
 
 extension DomainErrorMessage on DomainError {
   String get message => switch (this) {
-    NameTooShort() => 'Ime mora imati bar ${AnimalName.minLength} znaka.',
-    NameTooLong() => 'Ime može imati najviše ${AnimalName.maxLength} znakova.',
-    MotivationTooShort(:final length) =>
-      'Motivacija mora imati bar ${RequestMotivation.minLength} znakova (sada ima $length).',
-    MotivationTooLong() => 'Motivacija može imati najviše ${RequestMotivation.maxLength} znakova.',
+    NameTooShort(:final min) => 'Ime mora imati bar $min znaka.',
+    NameTooLong(:final max) => 'Ime može imati najviše $max znakova.',
+    MotivationTooShort(:final length, :final min) => 'Motivacija mora imati bar $min znakova (sada ima $length).',
+    MotivationTooLong(:final max) => 'Motivacija može imati najviše $max znakova.',
     NotAllowed() => 'Nemate dozvolu za ovu radnju.',
     NotFound() => 'Traženi podatak ne postoji.',
     InvalidTransition(:final from, :final to) => 'Prelaz iz „${from.label}“ u „${to.label}“ nije dozvoljen.',
-    TooManyActiveRequests() => 'Možete imati najviše $maxActiveRequests aktivna zahteva.',
+    TooManyActiveRequests(:final max) => 'Možete imati najviše $max aktivna zahteva.',
     AnimalNotAdoptable() => 'Ova životinja trenutno nije spremna za udomljavanje.',
     DuplicateRequest() => 'Već ste poslali zahtev za ovu životinju.',
     WithdrawNotAllowed() => 'Ovaj zahtev više ne može da se povuče.',

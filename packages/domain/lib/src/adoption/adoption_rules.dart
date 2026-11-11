@@ -24,7 +24,9 @@ Result<AdoptionRequest> submitRequest({
   if (!AccessPolicy.canSubmitRequest(user)) return const Failure(NotAllowed());
   if (!animal.isAdoptable) return const Failure(AnimalNotAdoptable());
   if (myRequests.any((r) => r.animalId == animal.id && r.isActive)) return const Failure(DuplicateRequest());
-  if (myRequests.where((r) => r.isActive).length >= maxActiveRequests) return const Failure(TooManyActiveRequests());
+  if (myRequests.where((r) => r.isActive).length >= maxActiveRequests) {
+    return const Failure(TooManyActiveRequests(max: maxActiveRequests));
+  }
   return Success(
     AdoptionRequest(id: id, animalId: animal.id, applicantId: user.id, motivation: motivation, createdAt: now),
   );

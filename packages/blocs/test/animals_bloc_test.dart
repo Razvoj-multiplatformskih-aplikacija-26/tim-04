@@ -167,7 +167,7 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all, notice: const AnimalRefused(NameTooShort())),
+        AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all, notice: const AnimalRefused(NameTooShort(min: 2))),
       ],
       verify: (_) async => expect(await repository.animals(), [ready]),
     );

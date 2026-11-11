@@ -29,8 +29,9 @@ void main() {
   });
 
   test('domain errors become Serbian messages', () {
-    expect(const MotivationTooShort(12).message, contains('sada ima 12'));
-    expect(const TooManyActiveRequests().message, 'Možete imati najviše 2 aktivna zahteva.');
+    expect(const MotivationTooShort(12, min: 20).message, contains('sada ima 12'));
+    expect(const TooManyActiveRequests(max: 2).message, 'Možete imati najviše 2 aktivna zahteva.');
+    expect(const TooManyActiveRequests(max: 3).message, 'Možete imati najviše 3 aktivna zahteva.');
   });
 
   test('both themes build', () {
