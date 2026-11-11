@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
+import 'data/fake_shelter_repository.dart';
 import 'data/seed.dart';
 import 'router.dart';
 
@@ -14,7 +15,7 @@ class UtocisteApp extends StatefulWidget {
 
   static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn');
 
-  final ShelterRepository repository;
+  final FakeShelterRepository repository;
   final AnimalRepository animals;
   final AdoptionRequestRepository requests;
 
@@ -41,7 +42,7 @@ class _UtocisteAppState extends State<UtocisteApp> {
   @override
   Widget build(BuildContext context) {
     final repository = widget.repository;
-    return RepositoryProvider<ShelterRepository>.value(
+    return RepositoryProvider<FakeShelterRepository>.value(
       value: repository,
       child: MultiBlocProvider(
         providers: [

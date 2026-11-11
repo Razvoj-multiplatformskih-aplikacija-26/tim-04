@@ -15,8 +15,7 @@ class FakeDataControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repository = context.read<ShelterRepository>();
-    if (repository is! FakeShelterRepository) return const SizedBox.shrink();
+    final repository = context.read<FakeShelterRepository>();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

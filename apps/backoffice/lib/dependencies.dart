@@ -1,4 +1,3 @@
-import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:use_cases/use_cases.dart';
 
@@ -7,7 +6,6 @@ import 'data/seed.dart';
 
 final class BackofficeDependencies {
   BackofficeDependencies({
-    required this.repository,
     required AnimalRepository animals,
     required AdoptionRequestRepository requests,
     required this.user,
@@ -30,7 +28,6 @@ final class BackofficeDependencies {
     var nextId = 0;
 
     return BackofficeDependencies(
-      repository: fake,
       animals: fake,
       user: coordinator,
       clock: const SystemClock(),
@@ -41,7 +38,6 @@ final class BackofficeDependencies {
     );
   }
 
-  final ShelterRepository repository;
   final User user;
   final Clock clock;
   final String Function() newId;

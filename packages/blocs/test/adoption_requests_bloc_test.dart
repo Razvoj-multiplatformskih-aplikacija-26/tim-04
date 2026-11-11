@@ -250,8 +250,8 @@ void main() {
         ];
       },
       verify: (_) async {
-        final saved = await repo.animal(rex.id);
-        expect(saved.status, Reserved(requestId: anasForRex.id, approvedBy: coordinator.id, at: now));
+        final saved = await repo.find(rex.id);
+        expect(saved!.status, Reserved(requestId: anasForRex.id, approvedBy: coordinator.id, at: now));
       },
     );
 

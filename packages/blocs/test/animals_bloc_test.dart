@@ -90,7 +90,7 @@ void main() {
     act: (bloc) async {
       bloc.add(const AnimalsRequested());
       await Future<void>.delayed(Duration.zero);
-      await repository.saveAnimal(ready.copyWith(status: resident.status));
+      await repository.save(ready.copyWith(status: resident.status), from: ready.status);
       bloc.add(const AnimalsRefreshed());
     },
     expect: () => [
@@ -297,8 +297,10 @@ void main() {
       build: () => blocWith(FakeShelterRepository(animals: [quarantined])),
       act: (bloc) async {
         await loaded(bloc);
-        // Another staff member ends the quarantine first, so the bloc's own end sees a different status.
-        await repository.saveAnimal(quarantined.copyWith(status: ReadyForAdoption(since: now)));
+        await repository.save(
+          quarantined.copyWith(status: ReadyForAdoption(since: now)),
+          from: quarantined.status,
+        );
         bloc.add(QuarantineEnded(animalId: quarantined.id, by: vet));
       },
       skip: 2,

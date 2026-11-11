@@ -15,7 +15,6 @@ const _wide = Size(1400, 900);
 const _narrow = Size(600, 900);
 
 BackofficeDependencies _dependencies(FakeShelterRepository repository, User user) => BackofficeDependencies(
-  repository: repository,
   animals: repository,
   requests: FakeAdoptionRequestRepository(repository),
   user: user,
