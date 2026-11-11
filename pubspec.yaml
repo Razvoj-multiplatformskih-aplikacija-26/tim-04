@@ -9,6 +9,7 @@ workspace:
   - apps/backoffice
   - apps/mobile
   - packages/api_contract
+  - packages/api_mapping
   - packages/blocs
   - packages/domain
   - packages/ui
