@@ -21,7 +21,10 @@ void main() {
 
     test('failures with the same error are equal', () {
       expect(const Failure<int>(MotivationTooShort(12, min: 20)), const Failure<int>(MotivationTooShort(12, min: 20)));
-      expect(const Failure<int>(MotivationTooShort(12, min: 20)), isNot(const Failure<int>(MotivationTooShort(15, min: 20))));
+      expect(
+        const Failure<int>(MotivationTooShort(12, min: 20)),
+        isNot(const Failure<int>(MotivationTooShort(15, min: 20))),
+      );
     });
   });
 

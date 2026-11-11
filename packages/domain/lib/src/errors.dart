@@ -5,12 +5,13 @@ import 'animal/animal_status.dart';
 sealed class DomainError {
   const DomainError();
 }
+
 @immutable
 final class NameTooShort extends DomainError {
   const NameTooShort({required this.min});
-  
+
   final int min;
-  
+
   @override
   bool operator ==(Object other) => other is NameTooShort && other.min == min;
 
@@ -20,6 +21,7 @@ final class NameTooShort extends DomainError {
   @override
   String toString() => 'NameTooShort(min: $min)';
 }
+
 @immutable
 final class NameTooLong extends DomainError {
   const NameTooLong({required this.max});

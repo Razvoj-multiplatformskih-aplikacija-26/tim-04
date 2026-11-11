@@ -32,7 +32,6 @@ Result<AdoptionRequest> submitRequest({
   );
 }
 
-
 Result<AdoptionRequest> withdrawRequest({required AdoptionRequest request, required User by, required DateTime now}) {
   if (!AccessPolicy.canWithdraw(by, request)) return const Failure(NotAllowed());
   if (request.status != AdoptionRequestStatus.pending) return const Failure(WithdrawNotAllowed());

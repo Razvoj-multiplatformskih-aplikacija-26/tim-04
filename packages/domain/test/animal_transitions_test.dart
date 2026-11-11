@@ -47,11 +47,17 @@ void main() {
     });
 
     test('rejects a name that is too short', () {
-      expect(intake(name: 'A' * (AnimalName.minLength - 1)), const Failure<Animal>(NameTooShort(min: AnimalName.minLength)));
+      expect(
+        intake(name: 'A' * (AnimalName.minLength - 1)),
+        const Failure<Animal>(NameTooShort(min: AnimalName.minLength)),
+      );
     });
 
     test('rejects a name that is too long', () {
-      expect(intake(name: 'A' * (AnimalName.maxLength + 1)), const Failure<Animal>(NameTooLong(max: AnimalName.maxLength)));
+      expect(
+        intake(name: 'A' * (AnimalName.maxLength + 1)),
+        const Failure<Animal>(NameTooLong(max: AnimalName.maxLength)),
+      );
     });
 
     test('checks permission before the name', () {
