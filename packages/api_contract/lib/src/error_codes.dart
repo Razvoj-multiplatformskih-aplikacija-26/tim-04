@@ -1,0 +1,18 @@
+abstract final class ErrorCodes {
+  static const nameTooShort = 'name-too-short';
+  static const nameTooLong = 'name-too-long';
+  static const motivationTooShort = 'motivation-too-short';
+  static const motivationTooLong = 'motivation-too-long';
+  static const tooManyActiveRequests = 'too-many-active-requests';
+  static const animalNotAdoptable = 'animal-not-adoptable';
+  static const duplicateRequest = 'duplicate-request';
+  static const withdrawNotAllowed = 'withdraw-not-allowed';
+  static const invalidRequestTransition = 'invalid-request-transition';
+  static const invalidTransition = 'invalid-transition';
+  static const notAllowed = 'not-allowed';
+  static const notFound = 'not-found';
+  static const badRequest = 'bad-request';
+  static const unsupportedMediaType = 'unsupported-media-type';
+  static const payloadTooLarge = 'payload-too-large';
+  static const serverError = 'server-error';
+}
