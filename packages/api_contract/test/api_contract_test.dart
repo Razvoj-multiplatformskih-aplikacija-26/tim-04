@@ -1,6 +1,8 @@
 import 'package:api_contract/api_contract.dart';
 import 'package:test/test.dart';
 
+import 'dart:convert';
+
 void main() {
   final quarantine = AnimalStatusDto(
     kind: AnimalStatusDto.inQuarantine,
@@ -187,6 +189,71 @@ void main() {
     test('the quarantine lives under the animal', () {
       expect(ApiPaths.animal('a-06'), '/api/v1/animals/a-06');
       expect(ApiPaths.quarantine('a-06'), '/api/v1/animals/a-06/quarantine');
+    });
+  });
+
+  group('ProblemDto', () {
+    ProblemDto overTheWire(ProblemDto problem) =>
+        ProblemDto.fromJson(jsonDecode(jsonEncode(problem.toJson())) as Map<String, Object?>);
+
+    test('a problem with a limit survives the trip to JSON and back', () {
+      const problem = ProblemDto(
+        status: 409,
+        code: ErrorCodes.tooManyActiveRequests,
+        title: 'Too many active requests',
+        max: 2,
+      );
+
+      final read = overTheWire(problem);
+
+      expect(read.status, 409);
+      expect(read.code, ErrorCodes.tooManyActiveRequests);
+      expect(read.title, 'Too many active requests');
+      expect(read.max, 2);
+      expect(read.min, isNull);
+      expect(read.value, isNull);
+      expect(read.from, isNull);
+      expect(read.to, isNull);
+    });
+
+    test('an invalid transition carries both statuses there and back', () {
+      final problem = ProblemDto(
+        status: 409,
+        code: ErrorCodes.invalidTransition,
+        title: 'Invalid transition',
+        from: quarantine,
+        to: const AnimalStatusDto(kind: AnimalStatusDto.reserved),
+      );
+
+      final read = overTheWire(problem);
+
+      expect(read.code, ErrorCodes.invalidTransition);
+      expect(read.from?.kind, AnimalStatusDto.inQuarantine);
+      expect(read.from?.until, DateTime.utc(2026, 11, 15));
+      expect(read.to?.kind, AnimalStatusDto.reserved);
+    });
+
+    test('toJson leaves out the fields that are null', () {
+      const problem = ProblemDto(status: 404, code: ErrorCodes.notFound, title: 'Not found');
+
+      final json = problem.toJson();
+
+      expect(json.keys, unorderedEquals(['type', 'title', 'status', 'code']));
+      expect(json['type'], ProblemDto.typeOf(ErrorCodes.notFound));
+    });
+
+    test('fromJson without a title reads an empty title', () {
+      final read = ProblemDto.fromJson({'status': 403, 'code': ErrorCodes.notAllowed});
+
+      expect(read.title, '');
+      expect(read.code, ErrorCodes.notAllowed);
+    });
+
+    test('fromJson with a status that is not a number throws a FormatException', () {
+      expect(
+        () => ProblemDto.fromJson({'status': '409', 'code': ErrorCodes.duplicateRequest, 'title': 'Duplicate'}),
+        throwsFormatException,
+      );
     });
   });
 }

@@ -143,4 +143,37 @@ void main() {
       expect(() => AdoptionRequestDto.fromJson(overTheWire(json)).toDomain(), throwsFormatException);
     });
   });
+
+  group('DomainError', () {
+    test('every domain error has a code and comes back as the same error', () {
+      final errors = <DomainError>[
+        const NameTooShort(min: 2),
+        const NameTooLong(max: 40),
+        const MotivationTooShort(5, min: 20),
+        const MotivationTooLong(max: 500),
+        const TooManyActiveRequests(max: 2),
+        const AnimalNotAdoptable(),
+        const DuplicateRequest(),
+        const WithdrawNotAllowed(),
+        const InvalidRequestTransition(),
+        InvalidTransition(
+          from: ReadyForAdoption(since: DateTime.utc(2026, 8, 20)),
+          to: InQuarantine(since: DateTime.utc(2026, 8, 21), until: DateTime.utc(2026, 9, 4)),
+        ),
+        const NotAllowed(),
+        const NotFound(),
+      ];
+
+      for (final error in errors) {
+        final problem = ProblemDto.fromJson(overTheWire(error.toProblem().toJson()));
+        expect(problem.toDomainError(), error, reason: problem.code);
+      }
+    });
+
+    test('an unknown code gives no domain error', () {
+      const problem = ProblemDto(status: 400, code: 'nesto-novo', title: '');
+
+      expect(problem.toDomainError(), isNull);
+    });
+  });
 }
