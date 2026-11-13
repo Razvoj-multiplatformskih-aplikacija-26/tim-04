@@ -33,6 +33,11 @@ Future<Map<String, Object?>> readObject(Request request) async {
   };
 }
 
+Response respond<T>(Result<T> result, Object? Function(T value) toJson, {int status = 200}) => switch (result) {
+  Success(:final value) => json(status, toJson(value)),
+  Failure(:final error) => problem(error),
+};
+
 Middleware handleErrors() =>
     (Handler next) => (Request request) async {
       try {
