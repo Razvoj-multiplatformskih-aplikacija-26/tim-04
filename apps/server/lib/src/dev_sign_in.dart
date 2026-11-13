@@ -7,7 +7,7 @@ import 'user_store.dart';
 
 final currentUser = ContextProperty<User>('user');
 
-const devUserHeader = 'X-Dev-User';
+const devUserHeader = ApiHeaders.devUser;
 
 const _signInRequired = ProblemDto(status: 401, code: ErrorCodes.signInRequired, title: 'Sign in required');
 
