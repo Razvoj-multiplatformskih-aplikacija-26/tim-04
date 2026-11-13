@@ -3,6 +3,8 @@ import 'package:postgres/postgres.dart' hide Result;
 import 'package:server/server.dart';
 import 'package:test/test.dart';
 
+import 'support/test_database.dart';
+
 const _milica = User(id: UserId('u-milica'), name: 'Milica', role: Role.adopter);
 const _petar = User(id: UserId('u-petar'), name: 'Petar', role: Role.adopter);
 const _coordinator = User(id: UserId('u-coordinator'), name: 'Koordinator', role: Role.coordinator);
@@ -18,8 +20,8 @@ void main() {
   late Pool<void> database;
   late PostgresAdoptionRequestRepository repository;
 
-  setUpAll(() {
-    database = Pool<void>.withUrl(serverEnvironment()['DATABASE_URL']!);
+  setUpAll(() async {
+    database = await freshTestDatabase('utociste_test_requests');
     repository = PostgresAdoptionRequestRepository(database);
   });
 
