@@ -25,3 +25,11 @@ Role roleFromDb(String value) => switch (value) {
   'coordinator' => Role.coordinator,
   _ => throw StateError('Unknown role $value'),
 };
+
+String roleToDb(Role role) => switch (role) {
+  Role.adopter => 'adopter',
+  Role.volunteer => 'volunteer',
+  Role.seniorVolunteer => 'senior-volunteer',
+  Role.veterinarian => 'veterinarian',
+  Role.coordinator => 'coordinator',
+};
