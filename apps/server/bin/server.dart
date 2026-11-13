@@ -9,6 +9,7 @@ import 'package:use_cases/use_cases.dart';
 Future<void> main() async {
   final config = ServerConfig.fromEnvironment(serverEnvironment());
   final database = Pool<void>.withUrl(config.databaseUrl);
+  await seedDemoData(database);
   final signIn = DevSignIn(UserStore(database));
   final animalRepository = PostgresAnimalRepository(database);
   final animals = AnimalHandlers(animals: animalRepository, clock: const SystemClock(), newId: newUuid);
