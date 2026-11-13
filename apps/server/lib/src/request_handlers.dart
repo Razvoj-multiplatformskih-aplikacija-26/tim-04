@@ -13,11 +13,12 @@ final class RequestHandlers {
     required AnimalRepository animals,
     required Clock clock,
     required String Function() newId,
+    required AdoptionNotifier notifier,
   }) : _getRequests = GetRequests(requests: requests),
        _submitRequest = SubmitRequest(requests: requests, animals: animals, clock: clock, newId: newId),
        _withdrawRequest = WithdrawRequest(requests: requests, clock: clock),
-       _approveRequest = ApproveRequest(requests: requests, animals: animals, clock: clock),
-       _rejectRequest = RejectRequest(requests: requests);
+       _approveRequest = ApproveRequest(requests: requests, animals: animals, clock: clock, notifier: notifier),
+       _rejectRequest = RejectRequest(requests: requests, notifier: notifier);
 
   final GetRequests _getRequests;
   final SubmitRequest _submitRequest;

@@ -62,6 +62,7 @@ void main() {
           animals: animals,
           clock: clock,
           newId: newUuid,
+          notifier: const NoopNotifier(),
         ),
         signIn: DevSignIn(UserStore(database)),
         corsOrigins: const [],

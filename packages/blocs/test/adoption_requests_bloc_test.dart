@@ -60,8 +60,8 @@ void main() {
       getRequests: GetRequests(requests: requests),
       submitRequest: SubmitRequest(requests: requests, animals: repo, clock: clock, newId: () => 'r-new'),
       withdrawRequest: WithdrawRequest(requests: requests, clock: clock),
-      approveRequest: ApproveRequest(requests: requests, animals: repo, clock: clock),
-      rejectRequest: RejectRequest(requests: requests),
+      approveRequest: ApproveRequest(requests: requests, animals: repo, clock: clock, notifier: const NoopNotifier()),
+      rejectRequest: RejectRequest(requests: requests, notifier: const NoopNotifier()),
     );
   }
 

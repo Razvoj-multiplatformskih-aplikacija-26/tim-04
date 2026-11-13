@@ -18,6 +18,7 @@ Future<void> main() async {
     animals: animalRepository,
     clock: const SystemClock(),
     newId: newUuid,
+    notifier: FakeNotifier(apiKey: config.notifierApiKey),
   );
   final server = RelicServer(() => IOAdapter.bind(InternetAddress(config.host), port: config.port));
   await server.mountAndStart(

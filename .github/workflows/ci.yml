@@ -9,6 +9,20 @@ jobs:
   shared-packages:
     name: Shared packages
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: utociste
+          POSTGRES_PASSWORD: utociste
+          POSTGRES_DB: utociste
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U utociste -d utociste"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v7
 
@@ -46,3 +60,8 @@ jobs:
 
       - name: Test the backoffice app
         run: cd apps/backoffice && flutter test
+
+      - name: Test the server
+        env:
+          DATABASE_URL: postgres://utociste:utociste@localhost:5433/utociste?sslmode=disable
+        run: cd apps/server && dart test

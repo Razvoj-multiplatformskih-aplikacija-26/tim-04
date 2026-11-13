@@ -5,6 +5,7 @@ export 'src/end_quarantine.dart';
 export 'src/get_animals.dart';
 export 'src/get_requests.dart';
 export 'src/intake_animal.dart';
+export 'src/ports/adoption_notifier.dart';
 export 'src/ports/adoption_request_repository.dart';
 export 'src/ports/animal_repository.dart';
 export 'src/reject_request.dart';

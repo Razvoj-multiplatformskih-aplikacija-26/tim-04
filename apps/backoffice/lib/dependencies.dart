@@ -20,8 +20,13 @@ final class BackofficeDependencies {
        getRequests = GetRequests(requests: requests),
        submitRequest = SubmitRequest(requests: requests, animals: animals, clock: clock, newId: newId),
        withdrawRequest = WithdrawRequest(requests: requests, clock: clock),
-       approveRequest = ApproveRequest(requests: requests, animals: animals, clock: clock),
-       rejectRequest = RejectRequest(requests: requests);
+       approveRequest = ApproveRequest(
+         requests: requests,
+         animals: animals,
+         clock: clock,
+         notifier: const NoopNotifier(),
+       ),
+       rejectRequest = RejectRequest(requests: requests, notifier: const NoopNotifier());
 
   factory BackofficeDependencies.fake() {
     final fake = FakeShelterRepository();

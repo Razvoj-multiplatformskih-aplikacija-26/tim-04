@@ -4,6 +4,7 @@ import 'package:use_cases/use_cases.dart';
 
 import 'in_memory_animals.dart';
 import 'in_memory_requests.dart';
+import 'recording_notifier.dart';
 
 void main() {
   const ana = User(id: UserId('u-ana'), name: 'Ana', role: Role.adopter);
@@ -78,12 +79,31 @@ void main() {
       expect(await withdraw(id: anas.id, by: ana), const Failure<AdoptionRequest>(WithdrawNotAllowed()));
       expect(requests.stored(anas.id).status, AdoptionRequestStatus.approved);
     });
+
+    test('the applicant is notified after the rejection is saved', () async {
+      final notifier = RecordingNotifier();
+      final reject = RejectRequest(requests: InMemoryRequests([anas]), notifier: notifier);
+
+      await reject(id: anas.id, by: coordinator);
+
+      expect(notifier.rejected, [anas.id]);
+      expect(notifier.approved, isEmpty);
+    });
+
+    test('nobody is notified when the rejection is refused', () async {
+      final notifier = RecordingNotifier();
+      final reject = RejectRequest(requests: InMemoryRequests([anas]), notifier: notifier);
+
+      await reject(id: anas.id, by: ana);
+
+      expect(notifier.rejected, isEmpty);
+    });
   });
 
   group('RejectRequest', () {
     test('the coordinator rejects a pending request', () async {
       final requests = InMemoryRequests([anas]);
-      final reject = RejectRequest(requests: requests);
+      final reject = RejectRequest(requests: requests, notifier: const NoopNotifier());
 
       expect(
         await reject(id: anas.id, by: coordinator),
@@ -93,14 +113,14 @@ void main() {
     });
 
     test('an adopter may not reject', () async {
-      final reject = RejectRequest(requests: InMemoryRequests([anas]));
+      final reject = RejectRequest(requests: InMemoryRequests([anas]), notifier: const NoopNotifier());
 
       expect(await reject(id: anas.id, by: ana), const Failure<AdoptionRequest>(NotAllowed()));
     });
 
     test('when someone else decides first, the late call is told the request is no longer pending', () async {
       final requests = RequestsChangedMeanwhile([anas], changeTo: AdoptionRequestStatus.approved);
-      final reject = RejectRequest(requests: requests);
+      final reject = RejectRequest(requests: requests, notifier: const NoopNotifier());
 
       expect(await reject(id: anas.id, by: coordinator), const Failure<AdoptionRequest>(InvalidRequestTransition()));
       expect(requests.stored(anas.id).status, AdoptionRequestStatus.approved);
@@ -199,7 +219,12 @@ void main() {
 
     test('P5: approving one request reserves the animal and rejects the other pending requests', () async {
       final requests = InMemoryRequests([anas, markos, jelenas]);
-      final approve = ApproveRequest(requests: requests, animals: InMemoryAnimals([rex]), clock: clock);
+      final approve = ApproveRequest(
+        requests: requests,
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: const NoopNotifier(),
+      );
 
       final result = await approve(id: markos.id, by: coordinator);
 
@@ -214,7 +239,12 @@ void main() {
 
     test('an adopter may not approve', () async {
       final requests = InMemoryRequests([anas, markos]);
-      final approve = ApproveRequest(requests: requests, animals: InMemoryAnimals([rex]), clock: clock);
+      final approve = ApproveRequest(
+        requests: requests,
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: const NoopNotifier(),
+      );
 
       expect(await approve(id: anas.id, by: ana), const Failure<ApprovalOutcome>(NotAllowed()));
       expect(requests.stored(anas.id).status, AdoptionRequestStatus.pending);
@@ -222,11 +252,62 @@ void main() {
 
     test('approving the same request again is refused because it is no longer pending', () async {
       final requests = InMemoryRequests([anas, markos]);
-      final approve = ApproveRequest(requests: requests, animals: InMemoryAnimals([rex]), clock: clock);
+      final approve = ApproveRequest(
+        requests: requests,
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: const NoopNotifier(),
+      );
 
       await approve(id: anas.id, by: coordinator);
 
       expect(await approve(id: anas.id, by: coordinator), const Failure<ApprovalOutcome>(InvalidRequestTransition()));
+    });
+
+    test('the approved applicant and every automatically rejected one are notified', () async {
+      final notifier = RecordingNotifier();
+      final approve = ApproveRequest(
+        requests: InMemoryRequests([anas, markos, jelenas]),
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: notifier,
+      );
+
+      await approve(id: markos.id, by: coordinator);
+
+      expect(notifier.approved, [markos.id]);
+      expect(notifier.rejected, unorderedEquals([anas.id, jelenas.id]));
+    });
+
+    test('nobody is notified when the approval is refused', () async {
+      final notifier = RecordingNotifier();
+      final approve = ApproveRequest(
+        requests: InMemoryRequests([anas, markos]),
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: notifier,
+      );
+
+      await approve(id: anas.id, by: ana);
+
+      expect(notifier.approved, isEmpty);
+      expect(notifier.rejected, isEmpty);
+    });
+
+    test('the approval stands when the notification service fails', () async {
+      final requests = InMemoryRequests([anas, markos]);
+      final approve = ApproveRequest(
+        requests: requests,
+        animals: InMemoryAnimals([rex]),
+        clock: clock,
+        notifier: BrokenNotifier(),
+      );
+
+      final result = await approve(id: anas.id, by: coordinator);
+
+      expect(result, isA<Success<ApprovalOutcome>>());
+      expect(requests.stored(anas.id).status, AdoptionRequestStatus.approved);
+      expect(requests.stored(markos.id).status, AdoptionRequestStatus.rejected);
     });
   });
 }
