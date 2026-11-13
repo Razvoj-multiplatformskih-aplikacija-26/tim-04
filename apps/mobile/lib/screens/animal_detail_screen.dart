@@ -18,8 +18,10 @@ class AnimalDetailScreen extends StatelessWidget {
         switch (state) {
           case AnimalsLoading():
             return const _Message(child: LoadingView());
-          case AnimalsFailure():
-            return _Message(child: FailureView(onRetry: () => bloc.add(const AnimalsRetried())));
+          case AnimalsFailure(:final cause):
+            return _Message(
+              child: FailureView(cause: cause, onRetry: () => bloc.add(const AnimalsRetried())),
+            );
           case AnimalsEmpty() || AnimalsLoaded():
             final animal = bloc.animalById(id);
             if (animal == null) return const _Message(child: EmptyView(message: 'Životinja nije pronađena.'));

@@ -29,7 +29,10 @@ class CatalogScreen extends StatelessWidget {
               Expanded(
                 child: switch (state) {
                   AnimalsLoading() => const LoadingView(),
-                  AnimalsFailure() => FailureView(onRetry: () => bloc.add(const AnimalsRetried())),
+                  AnimalsFailure(:final cause) => FailureView(
+                    cause: cause,
+                    onRetry: () => bloc.add(const AnimalsRetried()),
+                  ),
                   AnimalsEmpty() => const EmptyView(message: 'Nema životinja u ovom prikazu.'),
                   AnimalsLoaded(:final animals) => ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

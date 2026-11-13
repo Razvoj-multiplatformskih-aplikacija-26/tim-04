@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../text/failures.dart';
+
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
 
@@ -10,16 +12,16 @@ class LoadingView extends StatelessWidget {
 }
 
 class FailureView extends StatelessWidget {
-  const FailureView({super.key, this.message = 'Učitavanje nije uspelo.', required this.onRetry});
+  const FailureView({super.key, this.cause, required this.onRetry});
 
-  final String message;
+  final Object? cause;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return _MessageView(
       icon: Icons.cloud_off_outlined,
-      message: message,
+      message: failureMessage(cause ?? const Object()),
       action: FilledButton.icon(
         onPressed: onRetry,
         icon: const Icon(Icons.refresh),

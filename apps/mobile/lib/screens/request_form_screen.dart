@@ -35,7 +35,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
     final message = switch (notice) {
       RequestSaved() => 'Zahtev je poslat. Čeka odluku koordinatora.',
       RequestRefused(:final error) => error.message,
-      RequestFailed() => 'Zahtev nije poslat. Pokušajte ponovo.',
+      RequestFailed(:final cause) => failureMessage(cause, fallback: 'Zahtev nije poslat. Pokušajte ponovo.'),
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());

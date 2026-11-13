@@ -95,11 +95,11 @@ class AnimalDetails extends StatelessWidget {
     switch (requests) {
       case RequestsLoading():
         return [Text('Zahtevi za udomljavanje', style: theme.textTheme.titleMedium), const LinearProgressIndicator()];
-      case RequestsFailure():
+      case RequestsFailure(:final cause):
         return [
           Text('Zahtevi za udomljavanje', style: theme.textTheme.titleMedium),
           const SizedBox(height: 6),
-          const Text('Zahtevi trenutno nisu dostupni.'),
+          Text(failureMessage(cause, fallback: 'Zahtevi trenutno nisu dostupni.')),
         ];
       case RequestsLoaded(requests: final all):
         final mine = [
