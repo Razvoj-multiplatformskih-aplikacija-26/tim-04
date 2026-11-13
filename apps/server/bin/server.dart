@@ -11,13 +11,18 @@ Future<void> main() async {
   final database = Pool<void>.withUrl(config.databaseUrl);
   await seedDemoData(database);
   final signIn = DevSignIn(UserStore(database));
-  final animals = AnimalHandlers(
-    animals: PostgresAnimalRepository(database),
+  final animalRepository = PostgresAnimalRepository(database);
+  final animals = AnimalHandlers(animals: animalRepository, clock: const SystemClock(), newId: newUuid);
+  final requests = RequestHandlers(
+    requests: PostgresAdoptionRequestRepository(database),
+    animals: animalRepository,
     clock: const SystemClock(),
     newId: newUuid,
   );
   final server = RelicServer(() => IOAdapter.bind(InternetAddress(config.host), port: config.port));
-  await server.mountAndStart(buildHandler(animals: animals, signIn: signIn, corsOrigins: config.corsOrigins));
+  await server.mountAndStart(
+    buildHandler(animals: animals, requests: requests, signIn: signIn, corsOrigins: config.corsOrigins),
+  );
   stdout.writeln('Utociste server on http://${config.host}:${config.port}');
   await _stopSignal();
   await server.close();

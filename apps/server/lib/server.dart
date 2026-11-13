@@ -7,4 +7,5 @@ export 'src/new_id.dart';
 export 'src/postgres_animal_repository.dart';
 export 'src/seed.dart' show seedDemoData;
 export 'src/postgres_adoption_request_repository.dart';
+export 'src/request_handlers.dart';
 export 'src/user_store.dart';
