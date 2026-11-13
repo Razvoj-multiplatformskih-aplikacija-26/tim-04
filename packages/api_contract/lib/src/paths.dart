@@ -22,3 +22,7 @@ abstract final class ApiQuery {
   static const animal = 'animal';
   static const applicant = 'applicant';
 }
+
+abstract final class ApiHeaders {
+  static const devUser = 'X-Dev-User';
+}
