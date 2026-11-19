@@ -1,4 +1,5 @@
 import 'package:backoffice/app.dart';
+import 'package:backoffice/data/fake_sessions.dart';
 import 'package:backoffice/data/fake_shelter_repository.dart';
 import 'package:backoffice/data/seed.dart';
 import 'package:backoffice/dependencies.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
 const _wide = Size(1400, 900);
@@ -17,7 +19,7 @@ const _narrow = Size(600, 900);
 BackofficeDependencies _dependencies(FakeShelterRepository repository, User user) => BackofficeDependencies(
   animals: repository,
   requests: FakeAdoptionRequestRepository(repository),
-  user: user,
+  sessions: FakeSessions(signedIn: user),
   clock: FixedClock(DateTime(2026, 10, 29, 10)),
   newId: () => 'r-test',
   users: seedUsers,
@@ -299,8 +301,8 @@ void main() {
     });
 
     testWidgets('a refused approval is explained in a snack bar', (tester) async {
-      // An adopter is not allowed to approve, so the domain refuses with NotAllowed.
-      await _start(tester, location: '/animals?selected=a-01', size: _tall, user: marko);
+      // A volunteer may use the backoffice but not approve, so the domain refuses with NotAllowed.
+      await _start(tester, location: '/animals?selected=a-01', size: _tall, user: volunteer);
       await tester.pumpAndSettle();
 
       await _tapRequestButton(tester, 'Odobri');
@@ -309,6 +311,84 @@ void main() {
       expect(find.text('Nemate dozvolu za ovu radnju.'), findsOneWidget);
       expect(find.text('Odobren'), findsNothing);
       expect(_inRow('Rex', 'Rezervisana'), findsNothing);
+    });
+  });
+
+  group('session', () {
+    Future<FakeSessions> startSignedOut(WidgetTester tester, {User? signedIn}) async {
+      tester.view
+        ..physicalSize = _wide
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final sessions = FakeSessions(signedIn: signedIn);
+      final repo = FakeShelterRepository(latency: const Duration(milliseconds: 10));
+      await tester.pumpWidget(
+        BackofficeApp(
+          dependencies: BackofficeDependencies(
+            animals: repo,
+            requests: FakeAdoptionRequestRepository(repo),
+            sessions: sessions,
+            clock: FixedClock(DateTime(2026, 10, 29, 10)),
+            newId: () => 'r-test',
+            users: seedUsers,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return sessions;
+    }
+
+    Future<void> logIn(WidgetTester tester, String username) async {
+      await tester.enterText(find.byType(TextField).at(0), username);
+      await tester.enterText(find.byType(TextField).at(1), FakeSessions.password);
+      await tester.tap(find.widgetWithText(FilledButton, 'Prijavi se'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('without a session the login opens, and the coordinator gets in', (tester) async {
+      await startSignedOut(tester);
+      expect(find.text('Utočište — Backoffice'), findsOneWidget);
+
+      await logIn(tester, 'koordinator1');
+
+      expect(find.text('Rex'), findsOneWidget);
+      expect(find.byTooltip('Odjavi se (Dragana Ilić)'), findsOneWidget);
+    });
+
+    testWidgets('an adopter is sent to the mobile app', (tester) async {
+      await startSignedOut(tester);
+
+      await logIn(tester, 'udomitelj1');
+
+      expect(find.text('Rex'), findsNothing);
+      expect(find.text('Backoffice je za osoblje utočišta. Udomitelji koriste mobilnu aplikaciju.'), findsOneWidget);
+    });
+
+    testWidgets('the logout button shows who is signed in', (tester) async {
+      await startSignedOut(tester);
+
+      await logIn(tester, 'stariji1');
+
+      expect(find.byTooltip('Odjavi se (Petar Simić)'), findsOneWidget);
+    });
+
+    testWidgets('logging out returns to the login', (tester) async {
+      await startSignedOut(tester, signedIn: coordinator);
+
+      await tester.tap(find.byTooltip('Odjavi se (Dragana Ilić)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rex'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Prijavi se'), findsOneWidget);
+    });
+
+    testWidgets('an expired session returns to the login and says why', (tester) async {
+      final sessions = await startSignedOut(tester, signedIn: coordinator);
+
+      sessions.expire();
+      await tester.pumpAndSettle();
+
+      expect(find.text(sessionExpiredMessage), findsOneWidget);
     });
   });
 

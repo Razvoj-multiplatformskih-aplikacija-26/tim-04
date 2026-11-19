@@ -8,12 +8,15 @@ environment:
 resolution: workspace
 
 dependencies:
+  blocs:
+    path: ../blocs
   domain:
     path: ../domain
   use_cases:
     path: ../use_cases
   flutter:
     sdk: flutter
+  flutter_bloc: 9.1.1
   intl: 0.20.3
 
 dev_dependencies:

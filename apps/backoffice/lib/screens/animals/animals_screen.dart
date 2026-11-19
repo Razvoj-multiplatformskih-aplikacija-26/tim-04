@@ -33,6 +33,7 @@ class AnimalsScreen extends StatefulWidget {
 class _AnimalsScreenState extends State<AnimalsScreen> {
   late final AnimalsBloc _bloc = context.read<AnimalsBloc>();
   late final BackofficeDependencies _dependencies = context.read<BackofficeDependencies>();
+  late final User _user = context.read<User>();
 
   final _screenFocus = FocusNode(debugLabel: 'Animals screen');
 
@@ -227,13 +228,13 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final now = _dependencies.clock.now();
     final until = await pickQuarantineEnd(context, animalName: animal.name.text, now: now);
     if (until == null || !mounted) return;
-    _bloc.add(QuarantineStarted(animalId: animal.id, by: _dependencies.user, until: until));
+    _bloc.add(QuarantineStarted(animalId: animal.id, by: _user, until: until));
   }
 
   Future<void> _endQuarantine(Animal animal) async {
     final ok = await confirmEndQuarantine(context, animalName: animal.name.text);
     if (!ok || !mounted) return;
-    _bloc.add(QuarantineEnded(animalId: animal.id, by: _dependencies.user));
+    _bloc.add(QuarantineEnded(animalId: animal.id, by: _user));
   }
 
   bool get _canIntake => _bloc.state is AnimalsLoaded || _bloc.state is AnimalsEmpty;
@@ -243,7 +244,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     if (data == null || !mounted) return;
     _bloc.add(
       AnimalIntakeSubmitted(
-        by: _dependencies.user,
+        by: _user,
         name: data.name,
         species: data.species,
         birthDate: data.birthDate,
@@ -266,6 +267,11 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
               actions: [
                 ..._simulateFailure(compact: !wide),
                 IconButton(tooltip: 'Osveži (F5)', onPressed: _refresh, icon: const Icon(Icons.refresh)),
+                IconButton(
+                  tooltip: 'Odjavi se (${_user.name})',
+                  onPressed: () => context.read<SessionBloc>().add(const SessionLogOutRequested()),
+                  icon: const Icon(Icons.logout),
+                ),
                 const SizedBox(width: 8),
                 Tooltip(
                   message: '$commandKeyLabel N',
