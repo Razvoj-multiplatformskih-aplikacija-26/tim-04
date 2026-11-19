@@ -14,8 +14,12 @@ import 'support/test_database.dart';
 late Pool<void> database;
 late RelicServer server;
 late Uri base;
+late Map<String, String> tokens;
 
-Map<String, String> as(String userId) => {'Content-Type': 'application/json', devUserHeader: userId};
+Map<String, String> as(String userId) => {
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer ${tokens[userId]}',
+};
 
 Uri at(String path) => base.replace(path: path);
 
@@ -53,6 +57,12 @@ void main() {
     await seedDemoData(database, demoPassword: 'test-password');
     const clock = SystemClock();
     final animals = PostgresAnimalRepository(database);
+    final sessions = SessionHandlers(
+      accounts: AccountStore(database),
+      secret: testSecret,
+      ttl: const Duration(hours: 1),
+    );
+    tokens = await tokensFor(database, sessions);
     server = RelicServer(() => IOAdapter.bind(InternetAddress.loopbackIPv4, port: 0));
     await server.mountAndStart(
       buildHandler(
@@ -64,7 +74,7 @@ void main() {
           newId: newUuid,
           notifier: const NoopNotifier(),
         ),
-        signIn: DevSignIn(UserStore(database)),
+        sessions: sessions,
         corsOrigins: const [],
       ),
     );
@@ -78,9 +88,13 @@ void main() {
 
   group('rights', () {
     test('without a user the server asks to sign in', () async {
-      final response = await http.get(at(ApiPaths.animals));
+      final response = await http.get(at(ApiPaths.adoptionRequests));
       expect(response.statusCode, 401);
       expect(codeOf(response), ErrorCodes.signInRequired);
+    });
+
+    test('the catalog is open without signing in', () async {
+      expect((await http.get(at(ApiPaths.animals))).statusCode, 200);
     });
 
     test('an adopter cannot take in an animal', () async {

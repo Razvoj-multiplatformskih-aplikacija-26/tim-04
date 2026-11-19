@@ -17,8 +17,12 @@ late Pool<void> database;
 late Pool<void> serverDatabase;
 late RelicServer server;
 late Uri base;
+late Map<String, String> tokens;
 
-Map<String, String> as(String userId) => {'Content-Type': 'application/json', devUserHeader: userId};
+Map<String, String> as(String userId) => {
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer ${tokens[userId]}',
+};
 
 Uri at(String path) => base.replace(path: path);
 
@@ -66,6 +70,12 @@ void main() {
     serverDatabase = Pool<void>.withUrl(_manyConnections().toString());
     const clock = SystemClock();
     final animals = PostgresAnimalRepository(serverDatabase);
+    final sessions = SessionHandlers(
+      accounts: AccountStore(serverDatabase),
+      secret: testSecret,
+      ttl: const Duration(hours: 1),
+    );
+    tokens = await tokensFor(database, sessions);
     server = RelicServer(() => IOAdapter.bind(InternetAddress.loopbackIPv4, port: 0));
     await server.mountAndStart(
       buildHandler(
@@ -77,7 +87,7 @@ void main() {
           newId: newUuid,
           notifier: const NoopNotifier(),
         ),
-        signIn: DevSignIn(UserStore(serverDatabase)),
+        sessions: sessions,
         corsOrigins: const [],
       ),
     );

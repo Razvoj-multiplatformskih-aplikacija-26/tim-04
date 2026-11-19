@@ -1,7 +1,7 @@
 export 'src/animal_handlers.dart';
 export 'src/app.dart';
 export 'src/config.dart';
-export 'src/dev_sign_in.dart';
+export 'src/sessions.dart';
 export 'src/env_file.dart';
 export 'src/fake_notifier.dart';
 export 'src/new_id.dart';
@@ -9,4 +9,4 @@ export 'src/postgres_animal_repository.dart';
 export 'src/seed.dart' show seedDemoData;
 export 'src/postgres_adoption_request_repository.dart';
 export 'src/request_handlers.dart';
-export 'src/user_store.dart';
+export 'src/account_store.dart';
