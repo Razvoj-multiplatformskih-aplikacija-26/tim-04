@@ -2,7 +2,7 @@ import 'package:blocs/blocs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/fake_shelter_repository.dart';
+import '../dependencies.dart';
 
 class FakeDataControls extends StatelessWidget {
   const FakeDataControls({super.key});
@@ -15,7 +15,8 @@ class FakeDataControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repository = context.read<FakeShelterRepository>();
+    final repository = context.read<AppDependencies>().fakeRepository;
+    if (repository == null) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
