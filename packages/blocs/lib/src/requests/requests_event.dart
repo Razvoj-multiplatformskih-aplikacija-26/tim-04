@@ -36,3 +36,9 @@ final class RequestRejected extends AdoptionRequestEvent {
 final class RequestsNoticeAcknowledged extends AdoptionRequestEvent {
   const RequestsNoticeAcknowledged();
 }
+
+final class RequestsRefreshed extends AdoptionRequestEvent {
+  const RequestsRefreshed([this.done]);
+
+  final Completer<void>? done;
+}

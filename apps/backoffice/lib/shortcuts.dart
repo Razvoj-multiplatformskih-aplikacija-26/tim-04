@@ -6,7 +6,6 @@ bool get usesCommandKey => defaultTargetPlatform == TargetPlatform.macOS || defa
 
 String get commandKeyLabel => usesCommandKey ? '⌘' : 'Ctrl';
 
-/// A [CallbackAction] that only runs when [enabled] says so, e.g. "approve" only when there is a pending request.
 class GuardedCallbackAction<T extends Intent> extends CallbackAction<T> {
   GuardedCallbackAction({required this.enabled, required super.onInvoke});
 
@@ -16,41 +15,38 @@ class GuardedCallbackAction<T extends Intent> extends CallbackAction<T> {
   bool isEnabled(T intent) => enabled();
 }
 
-/// ↑ / ↓: select the previous (-1) or next (+1) animal in the table.
 class MoveSelectionIntent extends Intent {
   const MoveSelectionIntent(this.offset);
 
   final int offset;
 }
 
-/// →: move the keyboard focus from the table into the details panel.
 class FocusDetailsIntent extends Intent {
   const FocusDetailsIntent();
 }
 
-/// ←: move the keyboard focus from the details panel back to the table.
 class FocusTableIntent extends Intent {
   const FocusTableIntent();
 }
 
-/// Esc: close the details panel.
 class ClearSelectionIntent extends Intent {
   const ClearSelectionIntent();
 }
 
-/// Ctrl+Enter: approve the oldest pending request of the selected animal.
 class ApproveIntent extends Intent {
   const ApproveIntent();
 }
 
-/// Ctrl+N: open the intake form for a new animal.
 class IntakeIntent extends Intent {
   const IntakeIntent();
 }
 
-/// F1: show the list of shortcuts.
 class ShowShortcutsIntent extends Intent {
   const ShowShortcutsIntent();
+}
+
+class RefreshIntent extends Intent {
+  const RefreshIntent();
 }
 
 SingleActivator _command(LogicalKeyboardKey key) =>
@@ -65,9 +61,9 @@ Map<ShortcutActivator, Intent> animalsShortcuts() => {
   _command(LogicalKeyboardKey.enter): const ApproveIntent(),
   _command(LogicalKeyboardKey.keyN): const IntakeIntent(),
   const SingleActivator(LogicalKeyboardKey.f1): const ShowShortcutsIntent(),
+  const SingleActivator(LogicalKeyboardKey.f5): const RefreshIntent(),
 };
 
-/// Inside the details panel ↑ / ↓ go from button to button instead of changing the animal.
 Map<ShortcutActivator, Intent> detailsShortcuts() => {
   const SingleActivator(LogicalKeyboardKey.arrowUp): const PreviousFocusIntent(),
   const SingleActivator(LogicalKeyboardKey.arrowDown): const NextFocusIntent(),
@@ -89,5 +85,6 @@ List<ShortcutDescription> shortcutDescriptions() => [
   const ShortcutDescription('Esc', 'Zatvori detalje'),
   ShortcutDescription('$commandKeyLabel Enter', 'Odobri najstariji zahtev na čekanju'),
   ShortcutDescription('$commandKeyLabel N', 'Prijem nove životinje'),
+  const ShortcutDescription('F5', 'Osveži podatke sa servera'),
   const ShortcutDescription('F1', 'Pregled prečica'),
 ];

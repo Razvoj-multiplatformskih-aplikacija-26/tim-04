@@ -34,10 +34,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
   late final AnimalsBloc _bloc = context.read<AnimalsBloc>();
   late final BackofficeDependencies _dependencies = context.read<BackofficeDependencies>();
 
-  /// The whole screen (table and filters): the arrows and the other shortcuts work while the focus is here.
   final _screenFocus = FocusNode(debugLabel: 'Animals screen');
 
-  /// The details panel: → moves the focus in, and Tab or ↑/↓ then stay inside until ← or Esc.
   final _detailsFocus = FocusScopeNode(debugLabel: 'Animal details');
 
   @override
@@ -87,9 +85,9 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     ),
     ShowShortcutsIntent: CallbackAction<ShowShortcutsIntent>(onInvoke: (_) => _showShortcuts()),
     IntakeIntent: GuardedCallbackAction<IntakeIntent>(enabled: () => _canIntake, onInvoke: (_) => _intake()),
+    RefreshIntent: CallbackAction<RefreshIntent>(onInvoke: (_) => _refresh()),
   };
 
-  /// Focuses the button used last time in the panel, or the first one.
   void _focusDetails() {
     final previous = _detailsFocus.focusedChild;
     if (previous != null) {
@@ -266,7 +264,8 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
             appBar: AppBar(
               title: const Text('Životinje'),
               actions: [
-                ..._simulateFailure(),
+                ..._simulateFailure(compact: !wide),
+                IconButton(tooltip: 'Osveži (F5)', onPressed: _refresh, icon: const Icon(Icons.refresh)),
                 const SizedBox(width: 8),
                 Tooltip(
                   message: '$commandKeyLabel N',
@@ -363,7 +362,6 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     };
   }
 
-  /// Counts the pending requests per animal for the table's "Zahtevi" column; empty until the requests load.
   Map<AnimalId, int> _pendingByAnimal(AdoptionRequestState requests) {
     if (requests is! RequestsLoaded) return const {};
     final counts = <AnimalId, int>{};
@@ -407,23 +405,27 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     );
   }
 
-  List<Widget> _simulateFailure() {
+  List<Widget> _simulateFailure({required bool compact}) {
     final fake = _dependencies.fakeRepository;
     if (fake == null) return const [];
+    void simulate() {
+      fake.failNextRequest();
+      _bloc.add(const AnimalsRetried());
+    }
+
     return [
-      TextButton.icon(
-        onPressed: () {
-          fake.failNextRequest();
-          _bloc.add(const AnimalsRetried());
-        },
-        icon: const Icon(Icons.bug_report_outlined),
-        label: const Text('Simuliraj grešku'),
-      ),
+      if (compact)
+        IconButton(tooltip: 'Simuliraj grešku', onPressed: simulate, icon: const Icon(Icons.bug_report_outlined))
+      else
+        TextButton.icon(
+          onPressed: simulate,
+          icon: const Icon(Icons.bug_report_outlined),
+          label: const Text('Simuliraj grešku'),
+        ),
     ];
   }
 
   Future<void> _approve(Animal animal, AdoptionRequest request, List<AdoptionRequest> all) async {
-    // Approving one request rejects every other pending request for the same animal, so the dialog names them.
     final others = [
       for (final r in all)
         if (r.animalId == animal.id && r.status == AdoptionRequestStatus.pending && r.id != request.id)
@@ -443,5 +445,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final ok = await confirmRejection(context, applicant: _dependencies.nameOf(request.applicantId));
     if (!ok || !mounted) return;
     context.read<AdoptionRequestBloc>().add(RequestRejected(request.id));
+  }
+
+  void _refresh() {
+    _bloc.add(const AnimalsRefreshed());
+    context.read<AdoptionRequestBloc>().add(const RequestsRefreshed());
   }
 }

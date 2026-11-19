@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,14 @@ class MyRequestsScreen extends StatelessWidget {
               FilledButton.tonal(onPressed: () => context.go('/'), child: const Text('Pogledaj životinje')),
             ],
           ),
-          RequestsLoaded(:final requests) => _RequestList(requests: requests),
+          RequestsLoaded(:final requests) => RefreshIndicator(
+            onRefresh: () {
+              final done = Completer<void>();
+              bloc.add(RequestsRefreshed(done));
+              return done.future;
+            },
+            child: _RequestList(requests: requests),
+          ),
         },
       ),
     );
@@ -43,6 +52,7 @@ class _RequestList extends StatelessWidget {
   Widget build(BuildContext context) {
     final newestFirst = [...requests]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: newestFirst.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),

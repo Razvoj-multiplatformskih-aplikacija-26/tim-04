@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:equatable/equatable.dart';
@@ -36,6 +38,14 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
         emit(RequestsLoaded(requests: current.requests));
       }
     });
+    on<RequestsRefreshed>((event, emit) async {
+      try {
+        await _refresh(emit);
+      } on RepositoryException catch (_) {
+      } finally {
+        event.done?.complete();
+      }
+    });
   }
 
   final User user;
@@ -61,6 +71,12 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
     emit(RequestsLoaded(requests: _requests, notice: notice));
   }
 
+  Future<void> _reload() async {
+    try {
+      _requests = await getRequests(user);
+    } on RepositoryException catch (_) {}
+  }
+
   Future<void> _act<T>(
     Emitter<AdoptionRequestState> emit,
     Future<Result<T>> Function() action,
@@ -70,6 +86,7 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
       emit(RequestsLoaded(requests: _requests, busy: true));
       switch (await action()) {
         case Failure(:final error):
+          await _reload();
           emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
         case Success(:final value):
           await _refresh(emit, notice: RequestSaved(saved(value)));

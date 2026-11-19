@@ -13,7 +13,9 @@ final class AnimalsRetried extends AnimalsEvent {
 }
 
 final class AnimalsRefreshed extends AnimalsEvent {
-  const AnimalsRefreshed();
+  const AnimalsRefreshed([this.done]);
+
+  final Completer<void>? done;
 }
 
 final class AnimalsFilterChanged extends AnimalsEvent {
