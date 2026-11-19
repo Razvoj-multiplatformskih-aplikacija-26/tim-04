@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 final class ServerConfig {
   const ServerConfig({
     required this.host,
@@ -6,6 +8,9 @@ final class ServerConfig {
     required this.databaseUrl,
     required this.corsOrigins,
     required this.notifierApiKey,
+    required this.jwtSecret,
+    this.sessionTtl = const Duration(hours: 8),
+    this.secureCookie = false,
   });
 
   factory ServerConfig.fromEnvironment(Map<String, String> environment) => ServerConfig(
@@ -22,6 +27,9 @@ final class ServerConfig {
         if (origin.trim().isNotEmpty) origin.trim(),
     ],
     notifierApiKey: environment['NOTIFIER_API_KEY'] ?? 'dev-fake',
+    jwtSecret: _jwtSecret(environment['JWT_SECRET']),
+    sessionTtl: Duration(minutes: int.parse(environment['SESSION_TTL_MINUTES'] ?? '480')),
+    secureCookie: environment['COOKIE_SECURE'] == 'true',
   );
 
   final String host;
@@ -30,4 +38,13 @@ final class ServerConfig {
   final List<String> corsOrigins;
   final String notifierApiKey;
   final String demoPassword;
+  final String jwtSecret;
+  final Duration sessionTtl;
+  final bool secureCookie;
 }
+
+String _jwtSecret(String? secret) => switch (secret) {
+  null => throw StateError('JWT_SECRET is not set. Copy .env.example to .env in the repository root.'),
+  final secret when utf8.encode(secret).length < 32 => throw StateError('JWT_SECRET must have at least 32 bytes.'),
+  final secret => secret,
+};

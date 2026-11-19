@@ -20,6 +20,7 @@ dependencies:
     path: ../../packages/use_cases
   hashlib: 2.4.2
   pool: 1.5.3
+  dart_jsonwebtoken: 3.4.1
 
 dev_dependencies:
   http: 1.6.0
