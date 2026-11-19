@@ -2,6 +2,8 @@ abstract final class ApiPaths {
   static const health = '/health';
   static const animals = '/api/v1/animals';
   static const adoptionRequests = '/api/v1/adoption-requests';
+  static const sessions = '/api/v1/sessions';
+  static const currentSession = '/api/v1/sessions/current';
 
   static String animal(String id) => '$animals/$id';
 
@@ -25,4 +27,8 @@ abstract final class ApiQuery {
 
 abstract final class ApiHeaders {
   static const devUser = 'X-Dev-User';
+}
+
+abstract final class ApiCookies {
+  static const session = 'utociste_session';
 }

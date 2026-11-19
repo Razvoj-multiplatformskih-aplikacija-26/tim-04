@@ -16,4 +16,6 @@ abstract final class ErrorCodes {
   static const payloadTooLarge = 'payload-too-large';
   static const serverError = 'server-error';
   static const signInRequired = 'sign-in-required';
+  static const invalidCredentials = 'invalid-credentials';
+  static const sessionExpired = 'session-expired';
 }
