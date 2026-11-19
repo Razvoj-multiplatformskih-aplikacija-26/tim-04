@@ -314,6 +314,41 @@ void main() {
     });
   });
 
+  group('two coordinators at once', () {
+    testWidgets('approving a request someone else already turned down explains why and shows the fresh state', (
+      tester,
+    ) async {
+      final repo = await _start(tester, location: '/animals?selected=a-01', size: _tall);
+      await tester.pumpAndSettle();
+      final requests = FakeAdoptionRequestRepository(repo);
+
+      final loading = requests.requests(animal: const AnimalId('a-01'));
+      await tester.pumpAndSettle();
+      final pending = [
+        for (final r in await loading)
+          if (r.status == AdoptionRequestStatus.pending) r,
+      ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      final approving = ApproveRequest(
+        requests: requests,
+        animals: repo,
+        clock: FixedClock(DateTime(2026, 10, 29, 10)),
+        notifier: const NoopNotifier(),
+      )(id: pending.first.id, by: seniorVolunteer);
+      await tester.pumpAndSettle();
+      expect(await approving, isA<Success<ApprovalOutcome>>());
+
+      await _tapRequestButton(tester, 'Odobri');
+      await _tapInDialog(tester, 'Odobri');
+
+      expect(
+        find.text('Neko je u međuvremenu već odlučio o ovom zahtevu. Prikazano je trenutno stanje.'),
+        findsOneWidget,
+      );
+      expect(find.text('Odobren'), findsOneWidget);
+      expect(_inRow('Rex', 'Rezervisana'), findsOneWidget);
+    });
+  });
+
   group('session', () {
     Future<FakeSessions> startSignedOut(WidgetTester tester, {User? signedIn}) async {
       tester.view

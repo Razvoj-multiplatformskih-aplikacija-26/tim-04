@@ -186,7 +186,15 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
       case RequestSaved():
         _bloc.add(const AnimalsRefreshed());
       case RequestRefused(:final error):
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+        _bloc.add(const AnimalsRefreshed());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 8),
+            showCloseIcon: true,
+            content: Text(_refusalMessage(error)),
+          ),
+        );
       case RequestFailed(:final cause):
         ScaffoldMessenger.of(
           context,
@@ -194,6 +202,12 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     }
     context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());
   }
+
+  String _refusalMessage(DomainError error) => switch (error) {
+    InvalidRequestTransition() ||
+    AnimalNotAdoptable() => 'Neko je u međuvremenu već odlučio o ovom zahtevu. Prikazano je trenutno stanje.',
+    _ => error.message,
+  };
 
   void _onAnimalsNotice(BuildContext context, AnimalsState state) {
     if (state is! AnimalsLoaded) return;
