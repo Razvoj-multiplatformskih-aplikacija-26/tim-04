@@ -18,6 +18,8 @@ dependencies:
   relic: 1.2.0
   use_cases:
     path: ../../packages/use_cases
+  hashlib: 2.4.2
+  pool: 1.5.3
 
 dev_dependencies:
   http: 1.6.0

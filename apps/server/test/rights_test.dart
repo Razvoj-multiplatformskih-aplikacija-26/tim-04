@@ -50,7 +50,7 @@ Future<http.Response> submit(
 void main() {
   setUpAll(() async {
     database = await freshTestDatabase('utociste_test_rights');
-    await seedDemoData(database);
+    await seedDemoData(database, demoPassword: 'test-password');
     const clock = SystemClock();
     final animals = PostgresAnimalRepository(database);
     server = RelicServer(() => IOAdapter.bind(InternetAddress.loopbackIPv4, port: 0));
