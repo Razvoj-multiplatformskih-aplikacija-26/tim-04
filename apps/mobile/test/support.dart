@@ -4,10 +4,13 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mobile/app.dart';
 import 'package:mobile/data/fake_shelter_repository.dart';
 import 'package:mobile/dependencies.dart';
+import 'package:use_cases/use_cases.dart';
 
 Future<void> initializeTestEnvironment() => initializeDateFormatting('sr_Latn');
 
-Widget appWith(FakeShelterRepository repository) => UtocisteApp(dependencies: AppDependencies.fake(repository));
+Widget appWith(FakeShelterRepository repository, {SessionRepository? sessions}) => UtocisteApp(
+  dependencies: AppDependencies.fake(repository: repository, sessions: sessions),
+);
 
 Future<void> settle(WidgetTester tester) => tester.pumpAndSettle(const Duration(milliseconds: 100));
 

@@ -17,7 +17,17 @@ class CatalogScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<AnimalsBloc>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Životinje'), actions: [if (kDebugMode) const FakeDataControls()]),
+      appBar: AppBar(
+        title: const Text('Životinje'),
+        actions: [
+          if (kDebugMode) const FakeDataControls(),
+          IconButton(
+            tooltip: 'Odjavi se',
+            onPressed: () => context.read<SessionBloc>().add(const SessionLogOutRequested()),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
+      ),
       body: BlocBuilder<AnimalsBloc, AnimalsState>(
         builder: (context, state) {
           final filter = switch (state) {
