@@ -1,6 +1,7 @@
 final class ServerConfig {
   const ServerConfig({
     required this.host,
+    required this.demoPassword,
     required this.port,
     required this.databaseUrl,
     required this.corsOrigins,
@@ -13,6 +14,9 @@ final class ServerConfig {
     databaseUrl:
         environment['DATABASE_URL'] ??
         (throw StateError('DATABASE_URL is not set. Copy .env.example to .env in the repository root.')),
+    demoPassword:
+        environment['DEMO_PASSWORD'] ??
+        (throw StateError('DEMO_PASSWORD is not set. Copy .env.example to .env in the repository root.')),
     corsOrigins: [
       for (final origin in (environment['CORS_ORIGINS'] ?? 'http://localhost:8081').split(','))
         if (origin.trim().isNotEmpty) origin.trim(),
@@ -25,4 +29,5 @@ final class ServerConfig {
   final String databaseUrl;
   final List<String> corsOrigins;
   final String notifierApiKey;
+  final String demoPassword;
 }

@@ -2,6 +2,8 @@ import 'package:api_mapping/api_mapping.dart';
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart' hide Result;
 
+import 'passwords.dart';
+
 import 'postgres_animal_repository.dart';
 
 const coordinator = User(id: UserId('u-coordinator'), name: 'Dragana Ilić', role: Role.coordinator);
@@ -17,6 +19,14 @@ const milica = User(id: UserId('u-milica'), name: 'Milica Stojanović', role: Ro
 const stefan = User(id: UserId('u-stefan'), name: 'Stefan Ilić', role: Role.adopter);
 
 const seedUsers = [coordinator, seniorVolunteer, veterinarian, volunteer, ana, marko, jelena, nikola, milica, stefan];
+const _logins = {
+  'u-ana': 'udomitelj1',
+  'u-marko': 'udomitelj2',
+  'u-volunteer': 'volonter1',
+  'u-senior': 'stariji1',
+  'u-vet': 'veterinar1',
+  'u-coordinator': 'koordinator1',
+};
 
 AnimalName _name(String text) => AnimalName.parse(text).valueOrNull!;
 
@@ -264,14 +274,21 @@ final seedRequests = [
   ),
 ];
 
-Future<void> seedDemoData(Pool<void> database) async {
+Future<void> seedDemoData(Pool<void> database, {required String demoPassword}) async {
   final rows = await database.execute('SELECT count(*) FROM users');
   if (rows.single[0] != 0) return;
   await database.runTx((session) async {
     for (final user in seedUsers) {
+      final login = _logins[user.id.value];
       await session.execute(
-        Sql.named('INSERT INTO users (id, name, role) VALUES (@id, @name, @role)'),
-        parameters: {'id': user.id.value, 'name': user.name, 'role': user.role.toDto()},
+        Sql.named('INSERT INTO users (id, name, role, login, password_hash) VALUES (@id, @name, @role, @login, @hash)'),
+        parameters: {
+          'id': user.id.value,
+          'name': user.name,
+          'role': user.role.toDto(),
+          'login': login,
+          'hash': login == null ? null : await hashPassword(demoPassword),
+        },
       );
     }
     final animals = PostgresAnimalRepository(session);
