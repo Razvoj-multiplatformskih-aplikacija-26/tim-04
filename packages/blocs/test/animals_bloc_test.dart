@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
@@ -117,6 +119,23 @@ void main() {
       AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all),
     ],
   );
+
+  test('the one who asked for a refresh learns when it is done, even when it fails', () async {
+    final bloc = blocWith(FakeShelterRepository(animals: [ready]))..add(const AnimalsRequested());
+    await Future<void>.delayed(Duration.zero);
+
+    final done = Completer<void>();
+    bloc.add(AnimalsRefreshed(done));
+    await done.future;
+
+    repository.failNextRequest();
+    final failed = Completer<void>();
+    bloc.add(AnimalsRefreshed(failed));
+    await failed.future;
+
+    expect(bloc.state, AnimalsLoaded(animals: [ready], filter: AnimalsFilter.all));
+    await bloc.close();
+  });
 
   group('intake', () {
     const coordinator = User(id: UserId('u-coord'), name: 'koordinator', role: Role.coordinator);

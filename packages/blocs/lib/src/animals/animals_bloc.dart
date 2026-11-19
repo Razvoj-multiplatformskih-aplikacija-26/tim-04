@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:equatable/equatable.dart';
@@ -19,7 +21,10 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
        super(const AnimalsLoading()) {
     on<AnimalsRequested>((event, emit) => _load(emit));
     on<AnimalsRetried>((event, emit) => _load(emit));
-    on<AnimalsRefreshed>((event, emit) => _refresh(emit));
+    on<AnimalsRefreshed>((event, emit) async {
+      await _refresh(emit);
+      event.done?.complete();
+    });
     on<AnimalsFilterChanged>((event, emit) {
       _filter = event.filter;
       if (state is AnimalsLoaded || state is AnimalsEmpty) _show(emit);

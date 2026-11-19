@@ -312,6 +312,54 @@ void main() {
     });
   });
 
+  group('refresh', () {
+    Animal brought(String id, String name) => Animal(
+      id: AnimalId(id),
+      name: AnimalName.parse(name).valueOrNull!,
+      species: Species.dog,
+      birthDate: DateTime(2024, 3, 1),
+      description: 'Pronađen pored puta.',
+      enclosureId: const EnclosureId('P-2'),
+      status: Received(receivedBy: seniorVolunteer.id, at: DateTime(2026, 10, 29, 9)),
+      receivedAt: DateTime(2026, 10, 29, 9),
+    );
+
+    testWidgets('F5 shows an animal someone else took in meanwhile', (tester) async {
+      final repo = await _start(tester, size: _tall);
+      await tester.pumpAndSettle();
+      expect(find.text('Mrki'), findsNothing);
+
+      final saving = repo.create(brought('a-mrki', 'Mrki'));
+      await tester.pumpAndSettle();
+      await saving;
+      await _press(tester, LogicalKeyboardKey.f5);
+
+      expect(find.text('Mrki'), findsOneWidget);
+    });
+
+    testWidgets('the refresh button does the same', (tester) async {
+      final repo = await _start(tester, size: _tall);
+      await tester.pumpAndSettle();
+
+      final saving = repo.create(brought('a-cvrle', 'Cvrle'));
+      await tester.pumpAndSettle();
+      await saving;
+      await tester.tap(find.byTooltip('Osveži (F5)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cvrle'), findsOneWidget);
+    });
+
+    testWidgets('F5 is listed among the shortcuts', (tester) async {
+      await _start(tester);
+      await tester.pumpAndSettle();
+
+      await _press(tester, LogicalKeyboardKey.f1);
+
+      expect(find.text('Osveži podatke sa servera'), findsOneWidget);
+    });
+  });
+
   group('keyboard', () {
     testWidgets('↓ and ↑ move the selection, Esc closes the panel', (tester) async {
       await _start(tester);

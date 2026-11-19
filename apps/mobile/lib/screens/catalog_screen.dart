@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:blocs/blocs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -34,11 +36,19 @@ class CatalogScreen extends StatelessWidget {
                     onRetry: () => bloc.add(const AnimalsRetried()),
                   ),
                   AnimalsEmpty() => const EmptyView(message: 'Nema životinja u ovom prikazu.'),
-                  AnimalsLoaded(:final animals) => ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: animals.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) => AnimalCard(animal: animals[index]),
+                  AnimalsLoaded(:final animals) => RefreshIndicator(
+                    onRefresh: () {
+                      final done = Completer<void>();
+                      bloc.add(AnimalsRefreshed(done));
+                      return done.future;
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: animals.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) => AnimalCard(animal: animals[index]),
+                    ),
                   ),
                 },
               ),

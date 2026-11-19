@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:equatable/equatable.dart';
@@ -34,6 +36,14 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
       final current = state;
       if (current is RequestsLoaded && current.notice != null) {
         emit(RequestsLoaded(requests: current.requests));
+      }
+    });
+    on<RequestsRefreshed>((event, emit) async {
+      try {
+        await _refresh(emit);
+      } on RepositoryException catch (_) {
+      } finally {
+        event.done?.complete();
       }
     });
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
@@ -66,6 +68,40 @@ void main() {
   }
 
   group('loading', () {
+    blocTest<AdoptionRequestBloc, AdoptionRequestState>(
+      'refreshing keeps the list on screen and shows what others changed meanwhile',
+      build: () => blocWith(coordinator, [anasForRex]),
+      act: (bloc) async {
+        bloc.add(const MyRequestsRequested());
+        await Future<void>.delayed(Duration.zero);
+        await FakeAdoptionRequestRepository(repo).submit(markosForRex);
+        final done = Completer<void>();
+        bloc.add(RequestsRefreshed(done));
+        await done.future;
+      },
+      skip: 2,
+      expect: () => [
+        RequestsLoaded(requests: [anasForRex, markosForRex]),
+      ],
+    );
+
+    blocTest<AdoptionRequestBloc, AdoptionRequestState>(
+      'refreshing without a connection keeps the old list and still finishes',
+      build: () => blocWith(coordinator, [anasForRex]),
+      act: (bloc) async {
+        bloc.add(const MyRequestsRequested());
+        await Future<void>.delayed(Duration.zero);
+        repo.failNextRequest();
+        final done = Completer<void>();
+        bloc.add(RequestsRefreshed(done));
+        await done.future;
+      },
+      expect: () => [
+        const RequestsLoading(),
+        RequestsLoaded(requests: [anasForRex]),
+      ],
+    );
+
     blocTest<AdoptionRequestBloc, AdoptionRequestState>(
       'adopter sees only their own requests',
       build: () => blocWith(ana, [anasForRex, markosForRex, anasForLuna]),
