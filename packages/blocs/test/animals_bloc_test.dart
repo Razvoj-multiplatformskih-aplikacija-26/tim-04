@@ -224,6 +224,39 @@ void main() {
     }
 
     blocTest<AnimalsBloc, AnimalsState>(
+      'refused because someone else was faster, it shows the reason and the fresh list',
+      build: () => blocWith(FakeShelterRepository(animals: [received])),
+      act: (bloc) async {
+        await loaded(bloc);
+        await repository.save(
+          received.copyWith(
+            status: InQuarantine(since: DateTime.utc(2026, 11, 2, 9), until: until),
+          ),
+          from: received.status,
+        );
+        bloc.add(QuarantineStarted(animalId: received.id, by: coordinator, until: until));
+      },
+      skip: 2,
+      expect: () {
+        final byOther = received.copyWith(
+          status: InQuarantine(since: DateTime.utc(2026, 11, 2, 9), until: until),
+        );
+        return [
+          AnimalsLoaded(
+            animals: [byOther],
+            filter: AnimalsFilter.all,
+            notice: AnimalRefused(
+              InvalidTransition(
+                from: byOther.status,
+                to: InQuarantine(since: now, until: until),
+              ),
+            ),
+          ),
+        ];
+      },
+    );
+
+    blocTest<AnimalsBloc, AnimalsState>(
       'starting it moves a received animal into quarantine until the chosen day',
       build: () => blocWith(FakeShelterRepository(animals: [received])),
       act: (bloc) async {
