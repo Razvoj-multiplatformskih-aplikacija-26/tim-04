@@ -9,7 +9,7 @@ final class AppDependencies {
   const AppDependencies({required this.animals, required this.requests, this.user = currentUser, this.fakeRepository});
 
   factory AppDependencies.server({required Uri baseUri}) {
-    final api = ApiClient(baseUri: baseUri, devUser: currentUser.id.value);
+    final api = ApiClient(baseUri: baseUri);
     return AppDependencies(animals: HttpAnimalRepository(api), requests: HttpAdoptionRequestRepository(api));
   }
 
