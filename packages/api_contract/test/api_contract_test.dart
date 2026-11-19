@@ -256,4 +256,36 @@ void main() {
       );
     });
   });
+
+  group('Session', () {
+    test('a session goes over the wire and back', () {
+      final session = SessionDto(
+        user: const UserDto(id: 'u-ana', name: 'Ana Petrović', role: UserDto.adopter),
+        expiresAt: DateTime.utc(2026, 11, 20, 18),
+        token: 'abc',
+      );
+
+      final back = SessionDto.fromJson(jsonDecode(jsonEncode(session.toJson())) as Map<String, Object?>);
+
+      expect(back.user.id, 'u-ana');
+      expect(back.user.role, UserDto.adopter);
+      expect(back.expiresAt, session.expiresAt);
+      expect(back.token, 'abc');
+    });
+
+    test('a session for the browser has no token', () {
+      final session = SessionDto(
+        user: const UserDto(id: 'u-ana', name: 'Ana', role: UserDto.adopter),
+        expiresAt: DateTime.utc(2026, 11, 20, 18),
+      );
+
+      expect(session.toJson().containsKey('token'), isFalse);
+    });
+
+    test('a login without cookie asks for a token', () {
+      final login = LoginDto.fromJson({'username': 'udomitelj1', 'password': 'tajna'});
+
+      expect(login.cookie, isFalse);
+    });
+  });
 }
