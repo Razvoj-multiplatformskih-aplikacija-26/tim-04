@@ -93,13 +93,13 @@ void main() {
       await _start(tester, repository: repo);
       await tester.pumpAndSettle();
 
-      expect(find.text('Učitavanje nije uspelo.'), findsOneWidget);
+      expect(find.text('Nema veze sa serverom.'), findsOneWidget);
       expect(find.text('Rex'), findsNothing);
 
       await tester.tap(find.text('Pokušaj ponovo'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Učitavanje nije uspelo.'), findsNothing);
+      expect(find.text('Nema veze sa serverom.'), findsNothing);
       expect(find.text('Rex'), findsOneWidget);
     });
 
@@ -120,7 +120,7 @@ void main() {
       await tester.tap(find.text('Simuliraj grešku'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Učitavanje nije uspelo.'), findsOneWidget);
+      expect(find.text('Nema veze sa serverom.'), findsOneWidget);
     });
   });
 

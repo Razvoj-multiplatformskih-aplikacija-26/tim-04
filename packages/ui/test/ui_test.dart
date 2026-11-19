@@ -2,6 +2,7 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
+import 'package:use_cases/use_cases.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
@@ -91,5 +92,48 @@ void main() {
     await tester.pumpWidget(_wrap(const EmptyView(message: 'Nema životinja.')));
 
     expect(find.text('Nema životinja.'), findsOneWidget);
+  });
+
+  test('network failures have their own messages', () {
+    expect(
+      failureMessage(const RepositoryException('x', failure: RepositoryFailure.unreachable)),
+      'Nema veze sa serverom.',
+    );
+    expect(
+      failureMessage(const RepositoryException('x', failure: RepositoryFailure.serverError)),
+      'Greška na serveru.',
+    );
+    expect(
+      failureMessage(const RepositoryException('x', failure: RepositoryFailure.refused)),
+      'Server nije prihvatio zahtev.',
+    );
+    expect(
+      failureMessage(const RepositoryException('x', failure: RepositoryFailure.sessionExpired)),
+      'Sesija je istekla. Prijavite se ponovo.',
+    );
+    expect(failureMessage(StateError('x')), 'Učitavanje nije uspelo.');
+    expect(failureMessage(StateError('x'), fallback: 'Čuvanje nije uspelo.'), 'Čuvanje nije uspelo.');
+  });
+
+  testWidgets('the failure view says why and offers to try again', (tester) async {
+    var retried = 0;
+    await tester.pumpWidget(
+      _wrap(
+        FailureView(
+          cause: const RepositoryException('x', failure: RepositoryFailure.unreachable),
+          onRetry: () => retried++,
+        ),
+      ),
+    );
+
+    expect(find.text('Nema veze sa serverom.'), findsOneWidget);
+    await tester.tap(find.text('Pokušaj ponovo'));
+    expect(retried, 1);
+  });
+
+  testWidgets('the failure view without a known cause keeps the general message', (tester) async {
+    await tester.pumpWidget(_wrap(FailureView(onRetry: () {})));
+
+    expect(find.text('Učitavanje nije uspelo.'), findsOneWidget);
   });
 }

@@ -17,7 +17,7 @@ void main() {
     expect(find.byType(LoadingView), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
-    expect(find.text('Učitavanje nije uspelo.'), findsOneWidget);
+    expect(find.text('Nema veze sa serverom.'), findsOneWidget);
 
     await tester.tap(find.text('Pokušaj ponovo'));
     await tester.pump(const Duration(seconds: 2));

@@ -188,9 +188,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
         _bloc.add(const AnimalsRefreshed());
       case RequestRefused(:final error):
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
-      case RequestFailed():
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Akcija nije uspela. Pokušaj ponovo.')));
+      case RequestFailed(:final cause):
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage(cause, fallback: 'Akcija nije uspela. Pokušaj ponovo.'))));
     }
     context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());
   }
@@ -204,8 +205,10 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
         _select(animal.id);
       case AnimalRefused(:final error):
         messenger.showSnackBar(SnackBar(content: Text(error.message)));
-      case AnimalSaveFailed():
-        messenger.showSnackBar(const SnackBar(content: Text('Čuvanje nije uspelo. Pokušaj ponovo.')));
+      case AnimalSaveFailed(:final cause):
+        messenger.showSnackBar(
+          SnackBar(content: Text(failureMessage(cause, fallback: 'Čuvanje nije uspelo. Pokušaj ponovo.'))),
+        );
       case null:
         return;
     }
@@ -297,7 +300,7 @@ class _AnimalsScreenState extends State<AnimalsScreen> {
     final now = _dependencies.clock.now();
     return switch (state) {
       AnimalsLoading() => const LoadingView(),
-      AnimalsFailure() => FailureView(onRetry: () => _bloc.add(const AnimalsRetried())),
+      AnimalsFailure(:final cause) => FailureView(cause: cause, onRetry: () => _bloc.add(const AnimalsRetried())),
       AnimalsEmpty(:final filter) => EmptyView(message: 'Nema životinja za filter „${filterLabel(filter)}“.'),
       AnimalsLoaded(:final animals, :final selectedId, :final selected) when wide => Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

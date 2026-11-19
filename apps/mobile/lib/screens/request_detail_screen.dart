@@ -20,7 +20,7 @@ class RequestDetailScreen extends StatelessWidget {
     final message = switch (notice) {
       RequestSaved() => 'Zahtev je povučen.',
       RequestRefused(:final error) => error.message,
-      RequestFailed() => 'Povlačenje nije uspelo. Pokušajte ponovo.',
+      RequestFailed(:final cause) => failureMessage(cause, fallback: 'Povlačenje nije uspelo. Pokušajte ponovo.'),
     };
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     context.read<AdoptionRequestBloc>().add(const RequestsNoticeAcknowledged());
@@ -36,8 +36,10 @@ class RequestDetailScreen extends StatelessWidget {
         switch (state) {
           case RequestsLoading():
             return const _Message(child: LoadingView());
-          case RequestsFailure():
-            return _Message(child: FailureView(onRetry: () => bloc.add(const MyRequestsRequested())));
+          case RequestsFailure(:final cause):
+            return _Message(
+              child: FailureView(cause: cause, onRetry: () => bloc.add(const MyRequestsRequested())),
+            );
           case RequestsLoaded(:final requests, :final busy):
             final request = _find(requests);
             if (request == null) return const _Message(child: EmptyView(message: 'Zahtev nije pronađen.'));

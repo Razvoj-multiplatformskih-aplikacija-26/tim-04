@@ -16,7 +16,10 @@ class MyRequestsScreen extends StatelessWidget {
       body: BlocBuilder<AdoptionRequestBloc, AdoptionRequestState>(
         builder: (context, state) => switch (state) {
           RequestsLoading() => const LoadingView(),
-          RequestsFailure() => FailureView(onRetry: () => bloc.add(const MyRequestsRequested())),
+          RequestsFailure(:final cause) => FailureView(
+            cause: cause,
+            onRetry: () => bloc.add(const MyRequestsRequested()),
+          ),
           RequestsLoaded(isEmpty: true) => Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

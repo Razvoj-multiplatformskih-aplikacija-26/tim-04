@@ -10,6 +10,8 @@ resolution: workspace
 dependencies:
   domain:
     path: ../domain
+  use_cases:
+    path: ../use_cases
   flutter:
     sdk: flutter
   intl: 0.20.3
