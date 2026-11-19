@@ -1,3 +1,4 @@
+import 'package:api_client/api_client.dart';
 import 'package:domain/domain.dart';
 import 'package:use_cases/use_cases.dart';
 
@@ -27,6 +28,19 @@ final class BackofficeDependencies {
          notifier: const NoopNotifier(),
        ),
        rejectRequest = RejectRequest(requests: requests, notifier: const NoopNotifier());
+
+  factory BackofficeDependencies.server({required Uri baseUri}) {
+    final api = ApiClient(baseUri: baseUri, devUser: coordinator.id.value);
+    var nextId = 0;
+    return BackofficeDependencies(
+      animals: HttpAnimalRepository(api),
+      requests: HttpAdoptionRequestRepository(api),
+      user: coordinator,
+      clock: const SystemClock(),
+      newId: () => 'new-${++nextId}',
+      users: seedUsers,
+    );
+  }
 
   factory BackofficeDependencies.fake() {
     final fake = FakeShelterRepository();

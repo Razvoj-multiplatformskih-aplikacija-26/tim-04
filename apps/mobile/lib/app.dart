@@ -6,18 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-import 'data/fake_shelter_repository.dart';
-import 'data/seed.dart';
+import 'dependencies.dart';
 import 'router.dart';
 
 class UtocisteApp extends StatefulWidget {
-  const UtocisteApp({super.key, required this.repository, required this.animals, required this.requests});
+  const UtocisteApp({super.key, required this.dependencies});
 
   static const locale = Locale.fromSubtags(languageCode: 'sr', scriptCode: 'Latn');
 
-  final FakeShelterRepository repository;
-  final AnimalRepository animals;
-  final AdoptionRequestRepository requests;
+  final AppDependencies dependencies;
 
   @override
   State<UtocisteApp> createState() => _UtocisteAppState();
@@ -41,38 +38,40 @@ class _UtocisteAppState extends State<UtocisteApp> {
 
   @override
   Widget build(BuildContext context) {
-    final repository = widget.repository;
-    return RepositoryProvider<FakeShelterRepository>.value(
-      value: repository,
+    final dependencies = widget.dependencies;
+    final animals = dependencies.animals;
+    final requests = dependencies.requests;
+    return RepositoryProvider<AppDependencies>.value(
+      value: dependencies,
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
             create: (_) => AnimalsBloc(
-              getAnimals: GetAnimals(animals: widget.animals),
-              intakeAnimal: IntakeAnimal(animals: widget.animals, clock: const SystemClock(), newId: _newAnimalId),
-              startQuarantine: StartQuarantine(animals: widget.animals, clock: const SystemClock()),
-              endQuarantine: EndQuarantine(animals: widget.animals, clock: const SystemClock()),
+              getAnimals: GetAnimals(animals: animals),
+              intakeAnimal: IntakeAnimal(animals: animals, clock: const SystemClock(), newId: _newAnimalId),
+              startQuarantine: StartQuarantine(animals: animals, clock: const SystemClock()),
+              endQuarantine: EndQuarantine(animals: animals, clock: const SystemClock()),
               initialFilter: AnimalsFilter.readyForAdoption,
             )..add(const AnimalsRequested()),
           ),
           BlocProvider(
             create: (_) => AdoptionRequestBloc(
-              user: currentUser,
-              getRequests: GetRequests(requests: widget.requests),
+              user: dependencies.user,
+              getRequests: GetRequests(requests: requests),
               submitRequest: SubmitRequest(
-                requests: widget.requests,
-                animals: widget.animals,
+                requests: requests,
+                animals: animals,
                 clock: const SystemClock(),
                 newId: _newRequestId,
               ),
-              withdrawRequest: WithdrawRequest(requests: widget.requests, clock: const SystemClock()),
+              withdrawRequest: WithdrawRequest(requests: requests, clock: const SystemClock()),
               approveRequest: ApproveRequest(
-                requests: widget.requests,
-                animals: widget.animals,
+                requests: requests,
+                animals: animals,
                 clock: const SystemClock(),
                 notifier: const NoopNotifier(),
               ),
-              rejectRequest: RejectRequest(requests: widget.requests, notifier: const NoopNotifier()),
+              rejectRequest: RejectRequest(requests: requests, notifier: const NoopNotifier()),
             )..add(const MyRequestsRequested()),
           ),
         ],

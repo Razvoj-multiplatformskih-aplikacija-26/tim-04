@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mobile/app.dart';
 import 'package:mobile/data/fake_shelter_repository.dart';
+import 'package:mobile/dependencies.dart';
 
 Future<void> initializeTestEnvironment() => initializeDateFormatting('sr_Latn');
 
-Widget appWith(FakeShelterRepository repository) =>
-    UtocisteApp(repository: repository, animals: repository, requests: FakeAdoptionRequestRepository(repository));
+Widget appWith(FakeShelterRepository repository) => UtocisteApp(dependencies: AppDependencies.fake(repository));
 
 Future<void> settle(WidgetTester tester) => tester.pumpAndSettle(const Duration(milliseconds: 100));
 
