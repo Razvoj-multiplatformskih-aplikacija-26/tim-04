@@ -62,7 +62,7 @@ Uri _manyConnections() {
 void main() {
   setUp(() async {
     database = await freshTestDatabase(_name);
-    await seedDemoData(database);
+    await seedDemoData(database, demoPassword: 'test-password');
     serverDatabase = Pool<void>.withUrl(_manyConnections().toString());
     const clock = SystemClock();
     final animals = PostgresAnimalRepository(serverDatabase);
