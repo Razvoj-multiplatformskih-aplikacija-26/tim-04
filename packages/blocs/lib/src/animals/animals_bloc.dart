@@ -89,6 +89,12 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
     } catch (_) {}
   }
 
+  Future<void> _reload() async {
+    try {
+      _all = await getAnimals();
+    } on RepositoryException catch (_) {}
+  }
+
   Future<void> _save(
     Emitter<AnimalsState> emit,
     Future<Result<Animal>> Function() action, {
@@ -97,6 +103,7 @@ final class AnimalsBloc extends Bloc<AnimalsEvent, AnimalsState> {
     try {
       switch (await action()) {
         case Failure(:final error):
+          await _reload();
           _show(emit, notice: AnimalRefused(error));
         case Success(value: final animal):
           if (showAllWhenSaved) _filter = AnimalsFilter.all;

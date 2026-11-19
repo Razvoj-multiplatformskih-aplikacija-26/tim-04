@@ -1,5 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
+import 'package:api_mapping/api_mapping.dart';
 
 final class UserStore {
   const UserStore(this._database);
@@ -13,23 +14,6 @@ final class UserStore {
     );
     if (rows.isEmpty) return null;
     final [name, role] = rows.single;
-    return User(id: id, name: name! as String, role: roleFromDb(role! as String));
+    return User(id: id, name: name! as String, role: roleFromDto(role! as String));
   }
 }
-
-Role roleFromDb(String value) => switch (value) {
-  'adopter' => Role.adopter,
-  'volunteer' => Role.volunteer,
-  'senior-volunteer' => Role.seniorVolunteer,
-  'veterinarian' => Role.veterinarian,
-  'coordinator' => Role.coordinator,
-  _ => throw StateError('Unknown role $value'),
-};
-
-String roleToDb(Role role) => switch (role) {
-  Role.adopter => 'adopter',
-  Role.volunteer => 'volunteer',
-  Role.seniorVolunteer => 'senior-volunteer',
-  Role.veterinarian => 'veterinarian',
-  Role.coordinator => 'coordinator',
-};

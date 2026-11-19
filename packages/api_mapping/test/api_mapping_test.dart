@@ -82,6 +82,14 @@ void main() {
       expect(animalOverTheWire(noPhoto), noPhoto);
     });
 
+    test('every role goes over the wire and comes back the same', () {
+      for (final role in Role.values) {
+        final user = User(id: const UserId('u-1'), name: 'Neko', role: role);
+
+        expect(UserDto.fromJson(overTheWire(user.toDto().toJson())).toDomain(), user, reason: role.name);
+      }
+    });
+
     test('the birth date travels as a date and comes back as the same calendar day', () {
       expect(rex.toDto().toJson()['birthDate'], '2022-04-12');
       expect(animalOverTheWire(rex).birthDate, DateTime(2022, 4, 12));

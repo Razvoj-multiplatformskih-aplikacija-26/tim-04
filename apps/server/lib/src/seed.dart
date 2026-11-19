@@ -3,7 +3,6 @@ import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart' hide Result;
 
 import 'postgres_animal_repository.dart';
-import 'user_store.dart';
 
 const coordinator = User(id: UserId('u-coordinator'), name: 'Dragana Ilić', role: Role.coordinator);
 const seniorVolunteer = User(id: UserId('u-senior'), name: 'Petar Simić', role: Role.seniorVolunteer);
@@ -272,7 +271,7 @@ Future<void> seedDemoData(Pool<void> database) async {
     for (final user in seedUsers) {
       await session.execute(
         Sql.named('INSERT INTO users (id, name, role) VALUES (@id, @name, @role)'),
-        parameters: {'id': user.id.value, 'name': user.name, 'role': roleToDb(user.role)},
+        parameters: {'id': user.id.value, 'name': user.name, 'role': user.role.toDto()},
       );
     }
     final animals = PostgresAnimalRepository(session);
