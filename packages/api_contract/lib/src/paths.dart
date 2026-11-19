@@ -25,10 +25,6 @@ abstract final class ApiQuery {
   static const applicant = 'applicant';
 }
 
-abstract final class ApiHeaders {
-  static const devUser = 'X-Dev-User';
-}
-
 abstract final class ApiCookies {
   static const session = 'utociste_session';
 }

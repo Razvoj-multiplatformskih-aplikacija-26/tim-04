@@ -30,7 +30,7 @@ final class BackofficeDependencies {
        rejectRequest = RejectRequest(requests: requests, notifier: const NoopNotifier());
 
   factory BackofficeDependencies.server({required Uri baseUri}) {
-    final api = ApiClient(baseUri: baseUri, devUser: coordinator.id.value);
+    final api = ApiClient(baseUri: baseUri);
     var nextId = 0;
     return BackofficeDependencies(
       animals: HttpAnimalRepository(api),
