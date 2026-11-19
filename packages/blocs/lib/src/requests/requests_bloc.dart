@@ -61,6 +61,12 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
     emit(RequestsLoaded(requests: _requests, notice: notice));
   }
 
+  Future<void> _reload() async {
+    try {
+      _requests = await getRequests(user);
+    } on RepositoryException catch (_) {}
+  }
+
   Future<void> _act<T>(
     Emitter<AdoptionRequestState> emit,
     Future<Result<T>> Function() action,
@@ -70,6 +76,7 @@ final class AdoptionRequestBloc extends Bloc<AdoptionRequestEvent, AdoptionReque
       emit(RequestsLoaded(requests: _requests, busy: true));
       switch (await action()) {
         case Failure(:final error):
+          await _reload();
           emit(RequestsLoaded(requests: _requests, notice: RequestRefused(error)));
         case Success(:final value):
           await _refresh(emit, notice: RequestSaved(saved(value)));

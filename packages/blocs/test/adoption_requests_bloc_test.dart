@@ -278,6 +278,33 @@ void main() {
         RequestsLoaded(requests: [anasForRex], notice: const RequestRefused(NotAllowed())),
       ],
     );
+
+    blocTest<AdoptionRequestBloc, AdoptionRequestState>(
+      'refused because someone else was faster, it shows the reason and the fresh list',
+      build: () => blocWith(coordinator, [anasForRex, markosForRex]),
+      act: (bloc) async {
+        bloc.add(const MyRequestsRequested());
+        await Future<void>.delayed(Duration.zero);
+        await ApproveRequest(
+          requests: FakeAdoptionRequestRepository(repo),
+          animals: repo,
+          clock: FixedClock(now),
+          notifier: const NoopNotifier(),
+        )(id: markosForRex.id, by: coordinator);
+        bloc.add(RequestApproved(anasForRex.id));
+      },
+      skip: 2,
+      expect: () => [
+        RequestsLoaded(requests: [anasForRex, markosForRex], busy: true),
+        RequestsLoaded(
+          requests: [
+            anasForRex.copyWith(status: AdoptionRequestStatus.rejected),
+            markosForRex.copyWith(status: AdoptionRequestStatus.approved),
+          ],
+          notice: const RequestRefused(InvalidRequestTransition()),
+        ),
+      ],
+    );
   });
 
   group('reject (P6)', () {
