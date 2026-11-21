@@ -93,8 +93,10 @@ void main() {
       expect(codeOf(response), ErrorCodes.signInRequired);
     });
 
-    test('the catalog is open without signing in', () async {
-      expect((await http.get(at(ApiPaths.animals))).statusCode, 200);
+    test('the catalog needs signing in', () async {
+      final response = await http.get(at(ApiPaths.animals));
+      expect(response.statusCode, 401);
+      expect(codeOf(response), ErrorCodes.signInRequired);
     });
 
     test('an adopter cannot take in an animal', () async {

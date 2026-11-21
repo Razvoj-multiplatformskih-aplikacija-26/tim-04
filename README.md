@@ -100,7 +100,7 @@ cd apps/backoffice
 flutter run -d chrome --web-port 8081
 ```
 
-Katalog životinja i stranica pojedinačne životinje dostupni su bez prijave; prijava se traži za slanje zahteva, „Moji zahtevi“ i sav rad osoblja.
+Bez prijave su dostupni samo provera servera (`/health`) i sama prijava; katalog, zahtevi i sav rad osoblja traže prijavu.
 
 ### Demo nalozi
 
@@ -161,8 +161,7 @@ dart test
 
 | Pitanje | Odluka | Odbačeno i zašto |
 | --- | --- | --- |
-| Šta je dostupno bez prijave | katalog i stranica životinje; prijava se traži tek za slanje zahteva i „Moji zahtevi“ | prijava pri pokretanju: posetilac ne bi video katalog |
-| Prijava | korisničko ime i lozinka; lozinke su heširane Argon2id-om; pogrešna lozinka i nepostojeći nalog daju isti odgovor | čuvanje lozinke u čistom tekstu ili brzim hešom: krađa baze otkriva lozinke |
+| Šta je dostupno bez prijave | ništa osim provere servera i same prijave; udomitelj se prijavljuje na ulazu u aplikaciju, jer je aplikacija alat za podnošenje i praćenje zahteva | javni katalog: zapis životinje nosi stanje sa podacima o drugim korisnicima (ko je primio, kome je rezervisana), pa bi javni odgovor tražio poseban, okrnjen DTO; katalog u aplikaciji bez prijave, sa prijavom tek kod slanja zahteva: više stanja i ruta, a posetilac bez naloga ionako ne može ništa da uradi sa životinjom || Prijava | korisničko ime i lozinka; lozinke su heširane Argon2id-om; pogrešna lozinka i nepostojeći nalog daju isti odgovor | čuvanje lozinke u čistom tekstu ili brzim hešom: krađa baze otkriva lozinke |
 | Sesija | JWT (HS256) sa korisnikom, ulogom i istekom; mobilna i Windows ga šalju u zaglavlju `Authorization: Bearer`, a pregledač ga dobija samo u HttpOnly kolačiću; istekla ili izmenjena sesija je 401 `session-expired`, a aplikacija vraća korisnika na prijavu | token u `localStorage` pregledača: dostupan svakom skriptu na stranici |
 | Ko sme da menja tuđi zapis | udomitelj povlači samo svoj zahtev i samo dok je na čekanju; koordinator i stariji volonter odlučuju o zahtevima na čekanju; prijem i promena stanja životinje: koordinator; kraj karantina: koordinator ili veterinar; server proverava svaku akciju (403 `not-allowed`) | provera samo u aplikaciji: poziv mimo aplikacije bi prošao |
 

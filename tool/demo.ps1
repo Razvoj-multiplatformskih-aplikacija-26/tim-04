@@ -64,6 +64,6 @@ Write-Host "`n4. Tuđ zahtev ne postoji"
 Expect 'povlačenje Miličinog zahteva' (Send 'POST' "/api/v1/adoption-requests/$(Request-Id 5)/withdrawal" $ana $null) 404 'not-found'
 
 Write-Host "`n5. Bez prijave i sa lošim tokenom"
-Expect 'katalog bez prijave' (Send 'GET' '/api/v1/animals' $null $null) 200 ''
+Expect 'katalog bez prijave' (Send 'GET' '/api/v1/animals' $null $null) 401 'sign-in-required'
 Expect 'zahtevi bez prijave' (Send 'GET' '/api/v1/adoption-requests' $null $null) 401 'sign-in-required'
 Expect 'izmenjen token' (Send 'GET' '/api/v1/adoption-requests' "$($ana)x" $null) 401 'session-expired'
