@@ -34,8 +34,8 @@ final class BackofficeDependencies {
        logOut = LogOut(sessions: sessions),
        sessionExpirations = sessions.expirations;
 
-  factory BackofficeDependencies.server({required Uri baseUri}) {
-    final api = ApiClient(baseUri: baseUri);
+  factory BackofficeDependencies.server({required Uri baseUri, required TokenStore tokens}) {
+    final api = ApiClient(baseUri: baseUri, tokens: tokens);
     var nextId = 0;
     return BackofficeDependencies(
       animals: HttpAnimalRepository(api),

@@ -16,8 +16,8 @@ final class AppDependencies {
        logOut = LogOut(sessions: sessions),
        sessionExpirations = sessions.expirations;
 
-  factory AppDependencies.server({required Uri baseUri}) {
-    final api = ApiClient(baseUri: baseUri);
+  factory AppDependencies.server({required Uri baseUri, required TokenStore tokens}) {
+    final api = ApiClient(baseUri: baseUri, tokens: tokens);
     return AppDependencies(
       animals: HttpAnimalRepository(api),
       requests: HttpAdoptionRequestRepository(api),
